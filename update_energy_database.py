@@ -120,7 +120,7 @@ f, ax = plt.subplots(figsize=(15,10))
 
 ax.plot(result.index, result.meter, linestyle='None')
 
-sc = ax.scatter(result.index, result.meter, c=result.n_data, s=len(result.index.unique())*1.4, alpha=0.5, cmap='RdYlGn')
+sc = ax.scatter(result.index, result.meter, c=result.n_data, s=len(result.index.unique())*1.4, marker = 's', cmap='RdYlGn')
 
 cbar = f.colorbar(sc)
 cbar.set_label("Observations per day ", loc='top')

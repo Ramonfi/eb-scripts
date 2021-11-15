@@ -5,17 +5,13 @@ import math as m
 import numpy as np
 import pandas as pd
 
-#import matplotlib as mpl
 import matplotlib.pyplot as plt
-#import matplotlib.dates as mdates
-#from matplotlib.gridspec import GridSpec
-#from matplotlib import ticker
-#import matplotlib.collections as collections
 import matplotlib.colors as colors
 import numpy as np
 import smtplib, ssl
-#from email.mime.text import MIMEText
-
+import urllib.parse
+from getpass import getpass
+import platform
 
 ################################################ TOOLS ################################################
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
@@ -71,7 +67,7 @@ def export(fig,filepath,filename,extlist = list(),extsubfolder=False,show=False)
             exportname = os.path.join(filepath,ext,filename + '.' + ext)
         if os.path.isdir(os.path.dirname(exportname)) == False:
             os.makedirs(os.path.dirname(exportname))
-        fig.savefig(os.path.join(exportname),dpi=300)
+        fig.savefig(os.path.join(exportname),bbox_inches="tight",dpi=300)
         print(exportname,'saved!')
     if show == False:
         plt.close()
@@ -301,9 +297,9 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
     for item in rh_graph:
         ax.plot(drybulb_graph, [g_abs(t,item) for t in drybulb_graph], 'k-')
         if g_abs(40,item) <= max_y:
-            ax.text(40,g_abs(40,item), '  {}%'.format(int(item)), ha = 'left', va = 'bottom', fontsize = fontsize-2)
+            ax.text(40,g_abs(40,item), '  {}%'.format(int(item)), ha = 'left', va = 'bottom')
         if g_abs(40,item) > max_y:
-            ax.text(t_for_g(max_y,item),max_y, s='{}%'.format(int(item)), ha = 'left', va = 'bottom', rotation = 45, fontsize= fontsize-2)
+            ax.text(t_for_g(max_y,item),max_y, s='{}%'.format(int(item)), ha = 'left', va = 'bottom', rotation = 45)
     
     if isinstance(t2,(pd.Series, pd.DataFrame)) and isinstance(rh2, (pd.Series, pd.DataFrame)):
         df = pd.concat([t2, rh2],axis=1)
@@ -320,7 +316,7 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
             df['t'],
             df['G_abs'], 
             marker = '.',
-            ms= 3.5, 
+            #ms= 3.5, 
             c=new_colors[1],
             linestyle ='none', 
             label = 'Außenluftfeuchte',
@@ -343,7 +339,7 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
         df['t'],
         df['G_abs'], 
         marker = '.',
-        ms= 3.5, 
+        #ms= 3.5, 
         c=new_colors[0],
         linestyle ='none', 
         label = 'Raumluftfeuchte',
@@ -358,7 +354,6 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
         x = tx,
         y1=y1,
         y2=y2,
-
         color='k',
         alpha=0.2, 
         label = 'Behaglichkeitsbereich nach DIN 1946-6'
@@ -368,17 +363,19 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
             xy=(20, min(y2)), xycoords='data',
             xytext=(0.55, 0.6), textcoords='axes fraction',
             arrowprops=dict(arrowstyle="->"),bbox=dict(boxstyle="round", fc="w"),
-            horizontalalignment='center', verticalalignment='top',fontsize=fontsize)
+            horizontalalignment='center', verticalalignment='top')
 
     ax.set_xlabel(
         'Lufttemperatur [°C]',
         fontweight = 'bold',
-        size = fontsize)
+        #size = fontsize
+        )
 
     ax.set_ylabel(
         'Absolute Luftfeuchte\n[g/kg]', 
         fontweight = 'bold',
-        size = fontsize)
+        #size = fontsize
+        ) 
 
     ax.xaxis.set_major_formatter('{x:.0f}')
     ax.yaxis.set_major_formatter('{x:.0f}')
@@ -386,11 +383,12 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
     ax.set_title(
         'H,x - Diagramm', 
         fontweight = 'bold', 
-        fontsize = fontsize)
+        #fontsize = fontsize
+        )
 
     ax.legend(
         loc='upper left',
-        fontsize = fontsize, 
+        #fontsize = fontsize, 
         markerscale = 2,
         frameon=False)
 
@@ -400,7 +398,6 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
 ################################################ Thermischer Komfort nach DIN  ################################################
 
 def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12):
-    ##### import matplotlib.colors as colors
     def komfortstunden(df):
         results={}
         KAT={'I':2,'II':3,'III':4}
@@ -460,7 +457,7 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
     axs.plot(x, y, c='k',ls = 'dashed', label = 'Komforttemperatur')
 
     axs.plot(df['Tamb_g24'], df['TOP'],color =truncate_colormap('Reds_r',0,0.8)(0.1),
-                    ms = 5, 
+                    #ms = 5, 
                     marker = '.', 
                     linestyle='None',
                     alpha=0.75,
@@ -478,7 +475,7 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
                 0.1,
                 0.95, 
                 text1.strip(),      
-                fontsize = fontsize, 
+                #fontsize = fontsize, 
                 style='normal', 
                 ha = 'left', 
                 va = 'top',
@@ -494,7 +491,7 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
                 0.9,
                 0.15, 
                 text2.strip(),      
-                fontsize = fontsize, 
+                #fontsize = fontsize, 
                 style='normal', 
                 ha = 'right', 
                 va = 'bottom',
@@ -502,35 +499,76 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
                 bbox=dict(boxstyle="round", fc="w"), 
                 )
                 
-    axs.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]', fontweight = 'bold', size=fontsize)
+    axs.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]', fontweight = 'bold')
     axs.set_xlim(8,32)
     axs.set_ylabel('Raumtemperatur\n[°C]', fontweight = 'bold', size='large')
-    axs.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2', fontweight = 'bold', size=fontsize)
+    axs.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2', fontweight = 'bold')
     for spine in axs.spines:
         axs.spines[spine].set_visible(False)
-    axs.legend(loc='lower right',frameon=False,fontsize=fontsize)
+    axs.legend(loc='lower right',frameon=False)
 
 
 #########################################################  USER INPUTS  #############################################################################
+def mount_ls(mount):
+    server = 'nas.ads.mwn.de'
+    share = '/tuar/l15/private/DATA/FORSCHUNG/04_Projekte/2021/Einfach_Bauen_3/Daten/'
+
+    print(f'\ntrying to mount \n\t{server}{share}\non\n\t{mount}\n')
+    user = input(f'Enter the username on {server}:\n')
+    password = getpass(f'Enter the password for user {user} on {server}:\n')
+    pw = urllib.parse.quote_plus(password)
+
+    os.system(f'mount_smbfs -o automounted -N "//{user}:{pw}@{server}{share}" "{mount}"')
+
+    if os.path.ismount(mount):
+        print(f'{mount}: successfully mounted.\n')
+
+def unmount_ls(mount):
+    os.system(f'umount {mount}')
+    if os.path.ismount(mount) == False:
+        print(f'{mount}: successfully unmounted.\n')
 
 ### path to datasheets
 dir_db = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','database')
 dir_db_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\2_datenbank'
+
 
 ### paths for exporting graphs and results
 dir_results = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','Results')
 dir_results_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\3_auswertung'
 
 ### paths where (new) raw data is stored
+## 1) Energy Monitoring
 em_path = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
+
+## 2) Tinkerforge Dropbox Sync
 tf_path = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
+
+## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
 tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
+
+if platform.system() == 'Darwin':
+    dir = os.path.dirname(os.path.dirname(__file__))
+    mount = os.path.join(dir,'eb-remote')
+
+    if not os.path.exists(mount):
+        os.makedirs(mount)
+
+    if os.path.ismount(mount) == False:
+        mount_ls(mount)
+
+    if os.path.ismount(mount):
+        dir_db_ls = os.path.join(mount,'2_datenbank')
+        dir_results_ls = os.path.join(mount,'3_auswertung')
+        em_path = os.path.join(mount,'1_rohdaten','EM','RmCU')
+        tf_path = os.path.join(mount,'1_rohdaten')
+        tf_archive = os.path.join(mount,'ARCHIV','1_rohdaten')
 
 ### prepare config file for email support
 config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.py')
 if not os.path.exists(config_file):
     with open(config_file, "w") as f:
-        f.write('sender = ""\npassword = ""\nsmtp=""')
+        f.write('sender = "email-adress"\npassword = ""\nsmtp=""emails={"name":"name <name@email.com>"}')
         f.close()
 
 ### short name of buildings
@@ -552,12 +590,15 @@ for meter in ['tf','em']:
         files[meter] = {} 
     for bui in list(buid.keys()) + ['WD','PM']:
         path = os.path.join(dir_db,bui)
+        if not os.path.isdir(path):
+            os.makedirs(path)
         for fn in os.listdir(path):
             names = fn.split('_')
             if names[1] == meter:
                 if bui not in files[meter]:
                     files[meter][bui] = {}
                 files[meter][bui][fn.rsplit('_',1)[-1].split('.')[0]] = os.path.join(os.path.join(path), fn)
+
 
 
 ### Construct dict with room areas....
@@ -581,6 +622,9 @@ for app in ['WE1','WE2','WE3']:
 figsize = (15,10)
 height = 15
 width = 10
+
+def cm(inch):return inch*2.54
+def inch(cm):return cm/2.54
 
 figsize = (width,height)
 

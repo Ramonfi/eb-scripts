@@ -1,5 +1,6 @@
 
 import os
+import platform
 import datetime as dt
 import pandas as pd
 import numpy as np
@@ -56,7 +57,7 @@ def load_tf_file(path):
             delta = id1-id2
             for n in range(delta):
                 cols[id2+n],cols[id2+n+1] = cols[id2+n+1],cols[id2+n]
-                print('Headers: {} - {} switched!'.format(cols[id2+n],cols[id2+n+1]))
+                print(f'------Headers switeched: {cols[id2+n]} - {cols[id2+n+1]}')
     df.columns = cols
 
     df.drop(list(df.filter(like='named').columns), axis=1, inplace=True)
@@ -109,7 +110,7 @@ for bui in buid:
 
         df = []
         for file in files[bui]:
-            df.append(eb.load_tf_file(file))
+            df.append(load_tf_file(file))
 
         master_df[bui] = pd.concat(df)
         if master_df[bui].index.is_unique == False:
@@ -124,7 +125,6 @@ for bui in buid:
         print('...postprocessing complete, exporting database now...')
         master_df[bui].to_csv(db[bui], index=True)
         print('...export finished, starting next building now.')
-    print("Mom! I'm done!")
 
 #öffne vorhandene Datenbanken...
 print('2_ Datenbanken öffnen...')
@@ -227,10 +227,9 @@ for bui in buid_long:
         if test.index.isin(database[bui].index) == False:
             newdate = pd.to_datetime(test.index.values.min()).date()
             newday = load_tf_file(file)
-            if len(newday.columns) != cols_db:
-                print('---{}: Neue Datei gefunden, {} Spalten mehr als in der Datenbank!'.format(newdate, len(newday.columns)-cols_db))
-            else:
-                print('---{}: Neue Datei gefunden!'.format(newdate))
+
+            print(f'---{newdate}: Neue Datei gefunden!')
+
             for sensor in newday:
                 check = newday[sensor].isna().sum()/len(newday.index)
                 if check > 0.1:
@@ -240,7 +239,6 @@ for bui in buid_long:
                         notification[bui][sensor][newdate] = int((1-check)*100)
                     else:
                         notification[bui][sensor] = {newdate : int((1-check)*100)}
-
             df1.append(newday)
     try:        
         dropbox_df[bui] = pd.concat(df1)
@@ -285,8 +283,10 @@ else:
             print(text)
 
     if len(notification) > 0 and send==True:
-        eb.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
-
+        try:
+            eb.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
+        except Exception as e:
+            print(f'...senden der Nachricht war nicht erfolgreich : {e}')
 # send offline notification            
 who=['Roman Ficht <Roman.Ficht@tum.de>']
 
@@ -302,7 +302,10 @@ else:
         print(text)
 
     if len(offline) > 0 and send==True:
-        eb.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
+        try:
+            eb.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
+        except Exception as e:
+            print(f'Senden der Nachricht Fehlgeschlagen: {e}')
 
 # Füge neue Daten der Datenbank hinzu und speichere die aktualisierte Datenbank ab.
 print('4_ Speichere aktualisierte Datenbank...')
