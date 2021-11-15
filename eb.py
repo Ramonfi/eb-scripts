@@ -221,7 +221,7 @@ def load_amb(path):
 
 ################################################ HX DIAGRAMM ################################################
 
-def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1, fontsize = 12):
+def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1):
 
     # absolute Luftfeuchtigkeit in g/kg
     def g_abs(t: float, rh: float):
@@ -249,26 +249,6 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
         p_0 = blub*(100/rh)*pamb
 
         return B/(A-m.log(p_0))-C
-
-    def is_comfort(t, rh):
-        minrf = 30
-        maxrf = 65
-
-        maxaf = 11.5
-
-        t_min = 20
-        t_max = 26
-        
-        if t >= t_min and t <= t_max:
-            if rh >= minrf and rh <= maxrf:
-                if g_abs(t,rh) <= maxaf:
-                    return 1
-                else:
-                    return 0
-            else:
-                return 0  
-        else:
-            return 0
 
     new_colors = [truncate_colormap(cmap,minint,maxint)(1. * i/2) for i in range(2)]
 
@@ -316,7 +296,6 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
             df['t'],
             df['G_abs'], 
             marker = '.',
-            #ms= 3.5, 
             c=new_colors[1],
             linestyle ='none', 
             label = 'Außenluftfeuchte',
@@ -339,7 +318,6 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
         df['t'],
         df['G_abs'], 
         marker = '.',
-        #ms= 3.5, 
         c=new_colors[0],
         linestyle ='none', 
         label = 'Raumluftfeuchte',
@@ -367,14 +345,11 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
 
     ax.set_xlabel(
         'Lufttemperatur [°C]',
-        fontweight = 'bold',
-        #size = fontsize
         )
 
     ax.set_ylabel(
         'Absolute Luftfeuchte\n[g/kg]', 
-        fontweight = 'bold',
-        #size = fontsize
+
         ) 
 
     ax.xaxis.set_major_formatter('{x:.0f}')
@@ -383,13 +358,11 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
     ax.set_title(
         'H,x - Diagramm', 
         fontweight = 'bold', 
-        #fontsize = fontsize
         )
 
     ax.legend(
         loc='upper left',
-        #fontsize = fontsize, 
-        markerscale = 2,
+        markerscale = 3,
         frameon=False)
 
     for spine in ax.spines:
@@ -397,7 +370,7 @@ def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1,
 
 ################################################ Thermischer Komfort nach DIN  ################################################
 
-def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12):
+def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4}):
     def komfortstunden(df):
         results={}
         KAT={'I':2,'II':3,'III':4}
@@ -442,27 +415,39 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
         axs.plot(x1, y1, c='k',ls = linestyle[k])
         axs.plot(x2, y2, c='k',ls = linestyle[k])
 
-        axs.annotate('KAT {}'.format(key),
-                xy=(min(x1), min(y1)), xycoords='data',
-                xytext=(-15, 0), textcoords='offset points',
-                horizontalalignment='right', verticalalignment='top')
+        axs.annotate(
+            f'KAT {key}',
+            xy=(min(x1), 
+            min(y1)), 
+            xycoords='data',
+            xytext=(-5, 0), 
+            textcoords='offset points',
+            horizontalalignment='right', 
+            verticalalignment='center'
+            )
 
-        axs.annotate('KAT {}'.format(key),
-            xy=(min(x2), min(y2)), xycoords='data',
-            xytext=(-15, 0), textcoords='offset points',
-            horizontalalignment='right', verticalalignment='top')
+        axs.annotate(
+            f'KAT {key}',
+            xy=(min(x2), 
+            min(y2)), 
+            xycoords='data',
+            xytext=(-5, 0), 
+            textcoords='offset points',
+            horizontalalignment='right', 
+            verticalalignment='center'
+            )
 
     x = np.linspace(10,30)
     y = [(t/3)+18.8 for t in x]
     axs.plot(x, y, c='k',ls = 'dashed', label = 'Komforttemperatur')
 
     axs.plot(df['Tamb_g24'], df['TOP'],color =truncate_colormap('Reds_r',0,0.8)(0.1),
-                    #ms = 5, 
                     marker = '.', 
                     linestyle='None',
                     alpha=0.75,
                     label = 'Raumlufttemperatur im Verhältnis zur Außenlufttemperatur'
                     )
+
     results = komfortstunden(df)
     text2 = r"$\bf{" + str('Untergradstunden') + "}$" + '\n'
     text1 = r"$\bf{" + str('Übergradstunden') + "}$" + '\n'
@@ -475,7 +460,6 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
                 0.1,
                 0.95, 
                 text1.strip(),      
-                #fontsize = fontsize, 
                 style='normal', 
                 ha = 'left', 
                 va = 'top',
@@ -491,7 +475,6 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
                 0.9,
                 0.15, 
                 text2.strip(),      
-                #fontsize = fontsize, 
                 style='normal', 
                 ha = 'right', 
                 va = 'bottom',
@@ -499,13 +482,11 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4},fontsize=12)
                 bbox=dict(boxstyle="round", fc="w"), 
                 )
                 
-    axs.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]', fontweight = 'bold')
+    axs.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]')
     axs.set_xlim(8,32)
-    axs.set_ylabel('Raumtemperatur\n[°C]', fontweight = 'bold', size='large')
+    axs.set_ylabel('Raumtemperatur\n[°C]')
     axs.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2', fontweight = 'bold')
-    for spine in axs.spines:
-        axs.spines[spine].set_visible(False)
-    axs.legend(loc='lower right',frameon=False)
+    axs.legend(loc='lower right',markerscale = 3)
 
 
 #########################################################  USER INPUTS  #############################################################################
@@ -626,12 +607,42 @@ width = 10
 def cm(inch):return inch*2.54
 def inch(cm):return cm/2.54
 
-figsize = (width,height)
+din_a4 = (inch(21), inch(29.7))
+din_a4_landscape = (inch(29.7), inch(21))
 
-fontsize = 10
-fontsize_header = fontsize + 2
+din_a3 = (inch(29.7), inch(2*21))
+din_a3_landscape = (inch(2*21), inch(2*29.7))
+
+figsize = (width,height)
 
 ### Colors:
 c_temp = truncate_colormap('Reds_r' ,minval=0 ,maxval=0.8)
 c_hum = truncate_colormap('Blues_r',minval=0.2,maxval=0.8)
 c_co2 = truncate_colormap('Greens_r', minval=0,maxval=0.8)
+
+def set_rc_eb():
+    #fontsizes
+    SMALL_SIZE = 9
+    MEDIUM_SIZE = 10
+    BIGGER_SIZE = 12
+
+    plt.rc("figure", figsize=(10,6))
+    plt.rc("figure", titlesize=BIGGER_SIZE)
+
+    plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
+
+    plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
+    plt.rc('axes.spines', left=False)
+    plt.rc('axes.spines', right=False)
+    plt.rc('axes.spines', top=False)
+    plt.rc('axes.spines', bottom=False)
+
+    plt.rc('xtick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+    plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
+
+    plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
+    plt.rc('legend', frameon=False)
+    plt.rc('legend', loc = 'best')
+    plt.rc('lines', linewidth = 1)
+    plt.rcParams['lines.markersize']  = 1.5
