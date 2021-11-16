@@ -17,8 +17,4 @@ def run():
         smtp=config.smtp
         )
 
-schedule.every().day.at('21:50').do(run())
-
-while True:
-	schedule.run_pending()
-	time.sleep(1)
+run()

@@ -609,6 +609,7 @@ def inch(cm):return cm/2.54
 
 din_a4 = (inch(21), inch(29.7))
 din_a4_landscape = (inch(29.7), inch(21))
+in_doc = (10,6)
 
 din_a3 = (inch(29.7), inch(2*21))
 din_a3_landscape = (inch(2*21), inch(2*29.7))
@@ -620,6 +621,14 @@ c_temp = truncate_colormap('Reds_r' ,minval=0 ,maxval=0.8)
 c_hum = truncate_colormap('Blues_r',minval=0.2,maxval=0.8)
 c_co2 = truncate_colormap('Greens_r', minval=0,maxval=0.8)
 
+eb_bbox = {
+            'boxstyle':'square',
+            'alpha':0.8,
+            "facecolor":"white", 
+            'edgecolor':'0.8', 
+            "pad":0.4
+            }
+
 def set_rc_eb():
     #fontsizes
     SMALL_SIZE = 9
@@ -628,10 +637,12 @@ def set_rc_eb():
 
     plt.rc("figure", figsize=(10,6))
     plt.rc("figure", titlesize=BIGGER_SIZE)
+    plt.rc("figure", titleweight='bold')
 
     plt.rc('font', size=SMALL_SIZE)          # controls default text sizes
 
     plt.rc('axes', titlesize=MEDIUM_SIZE)     # fontsize of the axes title
+    plt.rcParams['axes.titleweight'] = 'bold'
     plt.rc('axes', labelsize=SMALL_SIZE)    # fontsize of the x and y labels
     plt.rc('axes.spines', left=False)
     plt.rc('axes.spines', right=False)
@@ -642,7 +653,7 @@ def set_rc_eb():
     plt.rc('ytick', labelsize=SMALL_SIZE)    # fontsize of the tick labels
 
     plt.rc('legend', fontsize=SMALL_SIZE)    # legend fontsize
-    plt.rc('legend', frameon=False)
+    plt.rc('legend', frameon=True)
     plt.rc('legend', loc = 'best')
     plt.rc('lines', linewidth = 1)
     plt.rcParams['lines.markersize']  = 1.5
