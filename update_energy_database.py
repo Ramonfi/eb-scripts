@@ -124,7 +124,7 @@ def main(lehrstuhl=False):
     cbar = f.colorbar(sc)
     cbar.set_label("Observations per day ", loc='top')
 
-    exdir = os.path.join(eb.dir_results,'Results','Allgemein')
+    exdir = os.path.join(eb.dir_results,'Allgemein')
     if lehrstuhl:
         exdir = os.path.join(eb.dir_results_ls,'Allgemein')
     if not os.path.isdir(exdir):

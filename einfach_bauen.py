@@ -1,9 +1,7 @@
 import eb
-import schedule
 import config
 import update_energy_database as em
 import update_tinkerforge_database as tf
-import time
 
 def run():
     em.main()

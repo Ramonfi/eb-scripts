@@ -40,6 +40,14 @@ def get_labels(dfp):
 
     return labels
 
+def ticks_to_hours(ax):
+    ### Diese Funktion rechnet die y-label eines Graphen von Minuten in Stunden um.
+    ticks = ax.get_yticks()
+    n_ticks = len(ticks)
+    max_ticks = round((ticks.max()/60/1000),0)*1000
+    new_ticks = range(0,int(max_ticks),int(n_ticks))
+    ax.set_yticklabels(new_ticks)
+
 def send_email(who,sender,subject,text,password,smtp):
     RCPT_TO = ', '.join(who)
     subject = subject
@@ -217,277 +225,6 @@ def load_amb(path):
     df['rain'].replace(0,np.nan,inplace=True)
     return df
 
-################################################ PLOT TEMPLATES ################################################
-
-################################################ HX DIAGRAMM ################################################
-
-def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1):
-
-    # absolute Luftfeuchtigkeit in g/kg
-    def g_abs(t: float, rh: float):
-        # atmosphärischer Luftdruck in Pa:
-        p = 101325
-        # Wasserdampfsättigungsdruck
-        def psat(t):
-            if t >= 0:
-                return 610.5*m.exp((17.269*t)/(237.3+t))
-            if t < 0:
-                return 610.5*m.exp((21.875*t)/(265.5+t))
-
-        rh=rh/100
-
-        return round( 0.622 * (rh*psat(t))/(p-rh*psat(t)) * 1000 ,2)
-
-    def t_for_g(g, rh):
-        A = 23.1964
-        B = 3816.44
-        C = 273.15 - 46.13
-        pamb = 101325
-
-        blub = ((29*g)/18000)/(1+29*g/18000)
-
-        p_0 = blub*(100/rh)*pamb
-
-        return B/(A-m.log(p_0))-C
-
-    new_colors = [truncate_colormap(cmap,minint,maxint)(1. * i/2) for i in range(2)]
-
-    # Wertebereich für Chart
-    drybulb_graph = np.linspace(-20,40, 601)
-    rh_graph = np.linspace(10,100,10)
-
-    # Komfortbereich
-    minrf = 30
-    maxrf = 65
-    maxaf = 11.5
-    t_min = 20
-    t_max = 26
-
-    #Ränder der Grafik
-    min_x = -20
-    min_y = 0
-    max_x = 40
-    max_y = 20
-
-    #Achsen Minima und Maxima
-    ax.set_xlim(min_x,max_x)
-    ax.set_ylim(min_y,max_y)             
- 
-    # Linien für das HX-Diagramm erstellen
-    for item in rh_graph:
-        ax.plot(drybulb_graph, [g_abs(t,item) for t in drybulb_graph], 'k-')
-        if g_abs(40,item) <= max_y:
-            ax.text(40,g_abs(40,item), '  {}%'.format(int(item)), ha = 'left', va = 'bottom')
-        if g_abs(40,item) > max_y:
-            ax.text(t_for_g(max_y,item),max_y, s='{}%'.format(int(item)), ha = 'left', va = 'bottom', rotation = 45)
-    
-    if isinstance(t2,(pd.Series, pd.DataFrame)) and isinstance(rh2, (pd.Series, pd.DataFrame)):
-        df = pd.concat([t2, rh2],axis=1)
-        df.columns = ['t', 'Rh']
-        df.dropna(inplace=True)
-        df = df.astype(float, errors='raise')
-        if len(df)==0:
-            return
-        df['G_abs'] = df.dropna().apply(lambda x: g_abs(x['t'], x['Rh']), axis = 1)
-        n_comf = df[(df.t > t_min) & (df.t < t_max) & (df.Rh < maxrf) & (df.Rh > minrf) & (df.G_abs < maxaf)].shape[0]
-
-        per_comf_t2 = round(n_comf/min(len(t2), len(rh2))*100,0)
-        ax.plot(
-            df['t'],
-            df['G_abs'], 
-            marker = '.',
-            c=new_colors[1],
-            linestyle ='none', 
-            label = 'Außenluftfeuchte',
-            alpha = 0.75
-            )
-
-    df = pd.concat([t1, rh1],axis=1)
-    df.columns = ['t', 'Rh']
-    df.dropna(axis=0,inplace=True)
-    df = df.astype(float, errors='raise')
-    if len(df)==0:
-        return
-    df['G_abs'] = df.dropna().apply(lambda x: g_abs(x['t'], x['Rh']), axis = 1)
-
-    n_comf = df[(df.t > t_min) & (df.t < t_max) & (df.Rh < maxrf) & (df.Rh > minrf) & (df.G_abs < maxaf)].shape[0]
-
-    per_comf_t1 = round(n_comf/min(len(t1), len(rh1))*100,0)
-
-    ax.plot(
-        df['t'],
-        df['G_abs'], 
-        marker = '.',
-        c=new_colors[0],
-        linestyle ='none', 
-        label = 'Raumluftfeuchte',
-        alpha = 0.75
-        )
-
-    tx = np.linspace(t_min,t_max,21)
-    y1 = [g_abs(t,minrf) for t in tx]
-    y2 = [min(g_abs(t,maxrf),maxaf) for t in tx]
-
-    ax.fill_between(
-        x = tx,
-        y1=y1,
-        y2=y2,
-        color='k',
-        alpha=0.2, 
-        label = 'Behaglichkeitsbereich nach DIN 1946-6'
-        )
-
-    ax.annotate(r"$\bf{" + str(int(per_comf_t1)) + str('\%') + "}$" + ' der Messpunkte\nim Behaglichkeitsbereich',
-            xy=(20, min(y2)), xycoords='data',
-            xytext=(0.55, 0.6), textcoords='axes fraction',
-            arrowprops=dict(arrowstyle="->"),bbox=dict(boxstyle="round", fc="w"),
-            horizontalalignment='center', verticalalignment='top')
-
-    ax.set_xlabel(
-        'Lufttemperatur [°C]',
-        )
-
-    ax.set_ylabel(
-        'Absolute Luftfeuchte\n[g/kg]', 
-
-        ) 
-
-    ax.xaxis.set_major_formatter('{x:.0f}')
-    ax.yaxis.set_major_formatter('{x:.0f}')
-
-    ax.set_title(
-        'H,x - Diagramm', 
-        fontweight = 'bold', 
-        )
-
-    ax.legend(
-        loc='upper left',
-        markerscale = 3,
-        frameon=False)
-
-    for spine in ax.spines:
-        ax.spines[spine].set_visible(False)
-
-################################################ Thermischer Komfort nach DIN  ################################################
-
-def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4}):
-    def komfortstunden(df):
-        results={}
-        KAT={'I':2,'II':3,'III':4}
-        df.columns = ['Tamb_g24', 'TOP']    
-        for idx, row in df.iterrows():
-            for key in KAT:
-                t_op = row.TOP
-                t = row.Tamb_g24
-                if t > 10:
-                    lower = (t/3)+18.8-KAT[key]-1
-                    upper = (t/3)+18.8+KAT[key]
-                    if (lower < t_op < upper) == False:
-                        if t_op < min(lower, upper):
-                            if 'lower' not in results:
-                                results['lower'] = {}
-                            if key not in results['lower']:
-                                results['lower'][key] = 0
-                            results['lower'][key] += 1
-                        if t_op > max(lower, upper):
-                            if 'upper' not in results:
-                                results['upper'] = {}
-                            if key not in results['upper']:
-                                results['upper'][key] = 0
-                            results['upper'][key] += 1
-        return results
-
-    df = pd.concat([TAMBG24,TOP],axis=1)
-    df.columns = ['Tamb_g24', 'TOP']
-    df.dropna(inplace=True)
-    df=df[(df.Tamb_g24 >10) & (df.Tamb_g24 < 30)]
-    df
-    linestyle = ['dashdot','dotted','solid']
-    KAT={'I':2,'II':3,'III':4}
-
-    for k, key in enumerate(KAT):
-        x1 = np.linspace(10,30)
-        x2 = np.linspace(10,30)
-
-        y1 = [(t/3)+18.8-KAT[key]-1 for t in x1]
-        y2 = [(t/3)+18.8+KAT[key] for t in x2]
-
-        axs.plot(x1, y1, c='k',ls = linestyle[k])
-        axs.plot(x2, y2, c='k',ls = linestyle[k])
-
-        axs.annotate(
-            f'KAT {key}',
-            xy=(min(x1), 
-            min(y1)), 
-            xycoords='data',
-            xytext=(-5, 0), 
-            textcoords='offset points',
-            horizontalalignment='right', 
-            verticalalignment='center'
-            )
-
-        axs.annotate(
-            f'KAT {key}',
-            xy=(min(x2), 
-            min(y2)), 
-            xycoords='data',
-            xytext=(-5, 0), 
-            textcoords='offset points',
-            horizontalalignment='right', 
-            verticalalignment='center'
-            )
-
-    x = np.linspace(10,30)
-    y = [(t/3)+18.8 for t in x]
-    axs.plot(x, y, c='k',ls = 'dashed', label = 'Komforttemperatur')
-
-    axs.plot(df['Tamb_g24'], df['TOP'],color =truncate_colormap('Reds_r',0,0.8)(0.1),
-                    marker = '.', 
-                    linestyle='None',
-                    alpha=0.75,
-                    label = 'Raumlufttemperatur im Verhältnis zur Außenlufttemperatur'
-                    )
-
-    results = komfortstunden(df)
-    text2 = r"$\bf{" + str('Untergradstunden') + "}$" + '\n'
-    text1 = r"$\bf{" + str('Übergradstunden') + "}$" + '\n'
-    for key in results:
-        if key == 'upper':
-            for kat in results[key]:
-                if results[key][kat] > 0:
-                    text1 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
-            axs.text(
-                0.1,
-                0.95, 
-                text1.strip(),      
-                style='normal', 
-                ha = 'left', 
-                va = 'top',
-                transform=axs.transAxes,
-                bbox=dict(boxstyle="round", fc="w"), 
-                )
-        if key == 'lower':
-            for kat in results[key]:
-            
-                if results[key][kat] > 0:
-                    text2 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
-            axs.text(
-                0.9,
-                0.15, 
-                text2.strip(),      
-                style='normal', 
-                ha = 'right', 
-                va = 'bottom',
-                transform=axs.transAxes,
-                bbox=dict(boxstyle="round", fc="w"), 
-                )
-                
-    axs.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]')
-    axs.set_xlim(8,32)
-    axs.set_ylabel('Raumtemperatur\n[°C]')
-    axs.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2', fontweight = 'bold')
-    axs.legend(loc='lower right',markerscale = 3)
-
 
 #########################################################  USER INPUTS  #############################################################################
 def mount_ls(mount):
@@ -657,3 +394,275 @@ def set_rc_eb():
     plt.rc('legend', loc = 'best')
     plt.rc('lines', linewidth = 1)
     plt.rcParams['lines.markersize']  = 1.5
+
+
+################################################ PLOT TEMPLATES ################################################
+
+set_rc_eb()
+
+################################################ HX DIAGRAMM ################################################
+
+def hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r',minint=0,maxint=1):
+
+    # absolute Luftfeuchtigkeit in g/kg
+    def g_abs(t: float, rh: float):
+        # atmosphärischer Luftdruck in Pa:
+        p = 101325
+        # Wasserdampfsättigungsdruck
+        def psat(t):
+            if t >= 0:
+                return 610.5*m.exp((17.269*t)/(237.3+t))
+            if t < 0:
+                return 610.5*m.exp((21.875*t)/(265.5+t))
+
+        rh=rh/100
+
+        return round( 0.622 * (rh*psat(t))/(p-rh*psat(t)) * 1000 ,2)
+
+    def t_for_g(g, rh):
+        A = 23.1964
+        B = 3816.44
+        C = 273.15 - 46.13
+        pamb = 101325
+
+        blub = ((29*g)/18000)/(1+29*g/18000)
+
+        p_0 = blub*(100/rh)*pamb
+
+        return B/(A-m.log(p_0))-C
+
+    new_colors = [truncate_colormap(cmap,minint,maxint)(1. * i/2) for i in range(2)]
+
+    # Wertebereich für Chart
+    drybulb_graph = np.linspace(-20,40, 601)
+    rh_graph = np.linspace(10,100,10)
+
+    # Komfortbereich
+    minrf = 30
+    maxrf = 65
+    maxaf = 11.5
+    t_min = 20
+    t_max = 26
+
+    #Ränder der Grafik
+    min_x = -20
+    min_y = 0
+    max_x = 40
+    max_y = 20
+
+    #Achsen Minima und Maxima
+    ax.set_xlim(min_x,max_x)
+    ax.set_ylim(min_y,max_y)             
+ 
+    # Linien für das HX-Diagramm erstellen
+    for item in rh_graph:
+        ax.plot(drybulb_graph, [g_abs(t,item) for t in drybulb_graph], 'k-')
+        if g_abs(40,item) <= max_y:
+            ax.text(40,g_abs(40,item), '  {}%'.format(int(item)), ha = 'left', va = 'bottom')
+        if g_abs(40,item) > max_y:
+            ax.text(t_for_g(max_y,item),max_y, s='{}%'.format(int(item)), ha = 'left', va = 'bottom', rotation = 45)
+    
+    if isinstance(t2,(pd.Series, pd.DataFrame)) and isinstance(rh2, (pd.Series, pd.DataFrame)):
+        df = pd.concat([t2, rh2],axis=1)
+        df.columns = ['t', 'Rh']
+        df.dropna(inplace=True)
+        df = df.astype(float, errors='raise')
+        if len(df)==0:
+            return
+        df['G_abs'] = df.dropna().apply(lambda x: g_abs(x['t'], x['Rh']), axis = 1)
+        n_comf = df[(df.t > t_min) & (df.t < t_max) & (df.Rh < maxrf) & (df.Rh > minrf) & (df.G_abs < maxaf)].shape[0]
+
+        per_comf_t2 = round(n_comf/min(len(t2), len(rh2))*100,0)
+        ax.plot(
+            df['t'],
+            df['G_abs'], 
+            marker = '.',
+            c=new_colors[1],
+            linestyle ='none', 
+            label = 'Außenluftfeuchte',
+            alpha = 0.75
+            )
+
+    df = pd.concat([t1, rh1],axis=1)
+    df.columns = ['t', 'Rh']
+    df.dropna(axis=0,inplace=True)
+    df = df.astype(float, errors='raise')
+    if len(df)==0:
+        return
+    df['G_abs'] = df.dropna().apply(lambda x: g_abs(x['t'], x['Rh']), axis = 1)
+
+    n_comf = df[(df.t > t_min) & (df.t < t_max) & (df.Rh < maxrf) & (df.Rh > minrf) & (df.G_abs < maxaf)].shape[0]
+
+    per_comf_t1 = round(n_comf/min(len(t1), len(rh1))*100,0)
+
+    ax.plot(
+        df['t'],
+        df['G_abs'], 
+        marker = '.',
+        c=new_colors[0],
+        linestyle ='none', 
+        label = 'Raumluftfeuchte',
+        alpha = 0.75
+        )
+
+    tx = np.linspace(t_min,t_max,21)
+    y1 = [g_abs(t,minrf) for t in tx]
+    y2 = [min(g_abs(t,maxrf),maxaf) for t in tx]
+
+    ax.fill_between(
+        x = tx,
+        y1=y1,
+        y2=y2,
+        color='k',
+        alpha=0.2, 
+        label = 'Behaglichkeitsbereich nach DIN 1946-6'
+        )
+
+    ax.annotate(r"$\bf{" + str(int(per_comf_t1)) + str('\%') + "}$" + ' der Messpunkte\nim Behaglichkeitsbereich',
+            xy=(20, min(y2)), xycoords='data',
+            xytext=(0.55, 0.6), textcoords='axes fraction',
+            arrowprops=dict(arrowstyle="->"),bbox=eb_bbox,
+            horizontalalignment='center', verticalalignment='top')
+
+    ax.set_xlabel(
+        'Lufttemperatur [°C]',
+        )
+
+    ax.set_ylabel(
+        'Absolute Luftfeuchte\n[g/kg]', 
+
+        ) 
+
+    ax.xaxis.set_major_formatter('{x:.0f}')
+    ax.yaxis.set_major_formatter('{x:.0f}')
+
+    ax.set_title(
+        'H,x - Diagramm', 
+        fontweight = 'bold', 
+        )
+
+    ax.legend(
+        loc='upper left',
+        markerscale = 3,
+        frameon=False)
+
+################################################ Thermischer Komfort nach DIN  ################################################
+
+def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4}):
+    def komfortstunden(df):
+        results={}
+        KAT={'I':2,'II':3,'III':4}
+        df.columns = ['Tamb_g24', 'TOP']    
+        for idx, row in df.iterrows():
+            for key in KAT:
+                t_op = row.TOP
+                t = row.Tamb_g24
+                if t > 10:
+                    lower = (t/3)+18.8-KAT[key]-1
+                    upper = (t/3)+18.8+KAT[key]
+                    if (lower < t_op < upper) == False:
+                        if t_op < min(lower, upper):
+                            if 'lower' not in results:
+                                results['lower'] = {}
+                            if key not in results['lower']:
+                                results['lower'][key] = 0
+                            results['lower'][key] += 1
+                        if t_op > max(lower, upper):
+                            if 'upper' not in results:
+                                results['upper'] = {}
+                            if key not in results['upper']:
+                                results['upper'][key] = 0
+                            results['upper'][key] += 1
+        return results
+
+    df = pd.concat([TAMBG24,TOP],axis=1)
+    df.columns = ['Tamb_g24', 'TOP']
+    df.dropna(inplace=True)
+    df=df[(df.Tamb_g24 >10) & (df.Tamb_g24 < 30)]
+    df
+    linestyle = ['dashdot','dotted','solid']
+    KAT={'I':2,'II':3,'III':4}
+
+    for k, key in enumerate(KAT):
+        x1 = np.linspace(10,30)
+        x2 = np.linspace(10,30)
+
+        y1 = [(t/3)+18.8-KAT[key]-1 for t in x1]
+        y2 = [(t/3)+18.8+KAT[key] for t in x2]
+
+        axs.plot(x1, y1, c='k',ls = linestyle[k])
+        axs.plot(x2, y2, c='k',ls = linestyle[k])
+
+        axs.annotate(
+            f'KAT {key}',
+            xy=(min(x1), 
+            min(y1)), 
+            xycoords='data',
+            xytext=(-5, 0), 
+            textcoords='offset points',
+            horizontalalignment='right', 
+            verticalalignment='center'
+            )
+
+        axs.annotate(
+            f'KAT {key}',
+            xy=(min(x2), 
+            min(y2)), 
+            xycoords='data',
+            xytext=(-5, 0), 
+            textcoords='offset points',
+            horizontalalignment='right', 
+            verticalalignment='center'
+            )
+
+    x = np.linspace(10,30)
+    y = [(t/3)+18.8 for t in x]
+    axs.plot(x, y, c='k',ls = 'dashed', label = 'Komforttemperatur')
+
+    axs.plot(df['Tamb_g24'], df['TOP'],color =truncate_colormap('Reds_r',0,0.8)(0.1),
+                    marker = '.', 
+                    linestyle='None',
+                    alpha=0.75,
+                    label = 'Raumlufttemperatur im Verhältnis zur Außenlufttemperatur'
+                    )
+
+    results = komfortstunden(df)
+    text2 = r"$\bf{" + str('Untergradstunden') + "}$" + '\n'
+    text1 = r"$\bf{" + str('Übergradstunden') + "}$" + '\n'
+    for key in results:
+        if key == 'upper':
+            for kat in results[key]:
+                if results[key][kat] > 0:
+                    text1 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
+            axs.text(
+                0,
+                0.95, 
+                text1.strip(),      
+                style='normal', 
+                ha = 'left', 
+                va = 'top',
+                transform=axs.transAxes,
+                bbox=eb_bbox, 
+                )
+        if key == 'lower':
+            for kat in results[key]:
+            
+                if results[key][kat] > 0:
+                    text2 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
+            axs.text(
+                1,
+                0.15, 
+                text2.strip(),      
+                style='normal', 
+                ha = 'right', 
+                va = 'bottom',
+                transform=axs.transAxes,
+                bbox=eb_bbox, 
+                )
+                
+    axs.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]')
+    axs.set_xlim(8,32)
+    axs.set_ylabel('Raumtemperatur\n[°C]')
+    axs.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2', fontweight = 'bold')
+    axs.legend(loc='lower right',markerscale = 3,frameon=False)
+    

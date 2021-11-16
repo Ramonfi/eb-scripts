@@ -9,6 +9,7 @@ Dieses Modul enthält generelle Daten und Funktionen die von den anderen Skripte
     - recolor_lines(): Färbt alle Linien in einem Plot mit einer colormap ein. Die Colormaps können durch die parameter minint und maxint zurecht geschnitten werden.
     - get_labels(): Verschönert die label in der Legende bei der Verwendung von Multi-Index Spalten
     - send_email(): Sended eine Email.
+    - ticks_to_hours(ax): Diese Funktion rechnet die y-label eines Graphen von Minuten in Stunden um.
     - export(): exportiert Figures in einer Reihe gewünschter Dateiformate (extlist) in einen bestimmten Ordner.
     - diverese Gleichungen zur Berechnung von Wasserdampf und Luftfeuchtigkeitsbeziehungen: (psat(t),roh(t), x_to_g(g,t),g_abs(rh,t),RH(g,t))
 
