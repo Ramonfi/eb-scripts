@@ -1,6 +1,5 @@
 
 import os
-import platform
 import datetime as dt
 import pandas as pd
 import numpy as np
@@ -38,6 +37,7 @@ def main(lehrstuhl = False, send = True):
         df = pd.read_csv(
             file,
             engine='python',
+            encoding= 'unicode_escape',
             sep=';',
             na_values=['-','#N/V','#NV'],
             decimal=',')
@@ -181,7 +181,7 @@ def main(lehrstuhl = False, send = True):
         last_day = pd.to_datetime(os.path.basename(dropbox_files[bui][-1]).rsplit('_',1)[0],format='%Y_%m_%d')
         last_day_soll = dt.datetime.today().date()-dt.timedelta(1)
 
-        if last_day == dt.date.today():
+        if last_day.date() == dt.date.today():
             last_file = dropbox_files[bui].pop(-1)
             print('{}: Datei von Heute ({}) wird übersprungen!'.format(bui, os.path.basename(last_file)))
         if last_day.date() < last_day_soll:
@@ -194,6 +194,7 @@ def main(lehrstuhl = False, send = True):
         for file in dropbox_files[bui]:
             test = pd.read_csv(
                     file,
+                    encoding= 'unicode_escape',
                     engine='python',
                     sep=';',
                     nrows=1,
@@ -203,7 +204,6 @@ def main(lehrstuhl = False, send = True):
             test.dropna(axis=1, how='all',inplace=True)
             test.drop(list(test.filter(like='named').columns), axis=1, inplace=True)
             test.drop_duplicates(ignore_index=True, inplace=True)
-            #test = test[test.iloc[:, 0] != tes.columns[0]]
 
             drop=[]
             for c, col in enumerate(test.columns):

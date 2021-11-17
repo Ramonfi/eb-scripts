@@ -1,7 +1,7 @@
 #import datetime as dt
 import os
 import math as m
-
+import datetime as dt
 import numpy as np
 import pandas as pd
 
@@ -287,6 +287,24 @@ config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.p
 if not os.path.exists(config_file):
     with open(config_file, "w") as f:
         f.write('sender = "email-adress"\npassword = ""\nsmtp=""emails={"name":"name <name@email.com>"}')
+        f.close()
+
+### prepare readme file
+readme = os.path.join(dir_db,'readme.txt')
+if not os.path.exists(readme):
+    with open(readme, "w") as f:
+        f.write(f'Stand: {dt.date.today()-dt.timedelta(days=1)}\n\n\
+Abkürzungsverzeichnis:\n\
+gesamt = Wärmemengenzähler am Hausanschluss\n\
+LB = Leichtbetonhaus\n\
+MH/HM = Massivholzhaus\n\
+MW = Ziegelhaus\n\
+PM = Pyranometer\n\
+WD = Wetterstation\n\n\
+em = Wärmemengenzähler\n\
+tf = TinkerForge Sensoren\n\n\
+raw/database = unverarbeitete Datensätze. Enthalten Lücken wenn Sensoren ausfallen.\n\
+resampled = nachberarbeitete Datensätze. Haben einen durchgehenden Zeitindex (1min, 15min oder 60min). Zwischenwerte werden allerdings einfach gelöscht. Heißt nicht alle Werte sind Aussagekräftig (z.B. Fenster und Bewegungsmelder nicht!)')
         f.close()
 
 ### short name of buildings
@@ -635,7 +653,7 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4}):
                 if results[key][kat] > 0:
                     text1 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
             axs.text(
-                0,
+                0.1,
                 0.95, 
                 text1.strip(),      
                 style='normal', 
@@ -650,7 +668,7 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4}):
                 if results[key][kat] > 0:
                     text2 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
             axs.text(
-                1,
+                0.9,
                 0.15, 
                 text2.strip(),      
                 style='normal', 
