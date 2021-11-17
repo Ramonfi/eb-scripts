@@ -241,7 +241,7 @@ def mount_ls(mount):
     if os.path.ismount(mount):
         print(f'{mount}: successfully mounted.\n')
 
-def unmount_ls(mount):
+def unmount_ls(mount=os.path.join(os.path.dirname(os.path.dirname(__file__)),'eb-remote')):
     os.system(f'umount {mount}')
     if os.path.ismount(mount) == False:
         print(f'{mount}: successfully unmounted.\n')
@@ -249,7 +249,6 @@ def unmount_ls(mount):
 ### path to datasheets
 dir_db = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','database')
 dir_db_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\2_datenbank'
-
 
 ### paths for exporting graphs and results
 dir_results = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','Results')
@@ -335,8 +334,6 @@ for meter in ['tf','em']:
                     files[meter][bui] = {}
                 files[meter][bui][fn.rsplit('_',1)[-1].split('.')[0]] = os.path.join(os.path.join(path), fn)
 
-
-
 ### Construct dict with room areas....
 idx = [(item.split('_')[1], item.split('_')[0]) for item in airnodes]
 A = pd.Series([21.775,2,6.46,17.85,8.8775, 4.8,0, 0, 0,17.85,2,4.8,15.075,2.0,12.92,17.85,8.8775,4.8,0],pd.MultiIndex.from_tuples(idx))
@@ -351,7 +348,6 @@ for app in ['WE1','WE2','WE3']:
         area[wohnungen2[app]]['%']=(area[wohnungen2[app]]['array']/area[wohnungen2[app]]['sum'])
     except:
         continue
-
 
 #############################################STYLE GUIDE ##############################################
 
@@ -683,4 +679,3 @@ def thermal_comfort_2(TAMBG24, TOP, axs, KAT={'I':2,'II':3,'III':4}):
     axs.set_ylabel('Raumtemperatur\n[°C]')
     axs.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2', fontweight = 'bold')
     axs.legend(loc='lower right',markerscale = 3,frameon=False)
-    
