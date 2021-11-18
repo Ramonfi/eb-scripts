@@ -6,10 +6,68 @@ import numpy as np
 import eb
 import config
 
-##############################################################___Input Daten___##############################################################
+###############################################################___Functions___###############################################################
 #############################################################################################################################################
+def load_tf_file(path):
+    df = pd.read_csv(
+        path,
+        engine='python',
+        encoding= 'unicode_escape',
+        sep=';',
+        na_values=['-','#N/V','#NV'],
+        decimal=',')
+    
+    df = df[df.iloc[:, 0] != df.columns[0]]
+
+    not_empty_cols = [(col, df.columns.get_loc(col)) for col in df.replace(' ', np.NaN).filter(like='Unnamed:').dropna(axis=1).columns]
+    empty_cols = [(col, df.columns.get_loc(col)) for col in df.columns if df[col].replace(' ',np.NaN).isnull().all() and not 'Unnamed:' in col]
+
+    cols = list(df.columns)
+    if len(not_empty_cols) == len(empty_cols):
+        for i in range(len(empty_cols)):
+            id1 = empty_cols[i][1]
+            id2 = not_empty_cols[i][1]
+            delta = id1-id2
+            for n in range(delta):
+                cols[id2+n],cols[id2+n+1] = cols[id2+n+1],cols[id2+n]
+                print(f'------Headers switeched: {cols[id2+n]} - {cols[id2+n+1]}')
+    df.columns = cols
+
+    df.drop(list(df.filter(like='named').columns), axis=1, inplace=True)
+
+    df.columns = df.columns.str.replace('HM', 'MH')
+
+    df.drop_duplicates(ignore_index=True, inplace=True)
+
+    if len(df)<1:
+        return
+    else:
+        drop=[]
+        for c, col in enumerate(df.columns):
+            if col == 'Date' or col == 'Datum':
+                d=c
+                date=col
+                drop.append(col)
+            if col == 'Time' or col =='Uhrzeit':
+                t=c
+                time=col
+                drop.append(col)
+
+        df.insert(0,'Datetime',pd.to_datetime(df[date] +' '+ df[time],dayfirst=True))
+        df.drop(drop,axis=1,inplace=True)
+
+        if df.Datetime.is_unique != True:
+            df.drop_duplicates(ignore_index=True, inplace=True, keep='last')
+        df.dropna(axis=1, how='all', inplace=True)
+        df.set_index('Datetime',inplace=True)
+        df.sort_index(axis=0, inplace=True)
+        return df
 
 def main(lehrstuhl = False, send = True):
+
+    ##############################################################___Input Daten___##############################################################
+    #############################################################################################################################################
+
     # Export Ordner
     db_loc = eb.dir_db
     if lehrstuhl:
@@ -31,95 +89,46 @@ def main(lehrstuhl = False, send = True):
         if os.path.isdir(os.path.dirname(db[bui])) == False:
             os.makedirs(os.path.dirname(db[bui]))
 
-    ###############################################################___Functions___###############################################################
-    #############################################################################################################################################
-    def load_tf_file(path):
-        df = pd.read_csv(
-            file,
-            engine='python',
-            encoding= 'unicode_escape',
-            sep=';',
-            na_values=['-','#N/V','#NV'],
-            decimal=',')
-        
-        df = df[df.iloc[:, 0] != df.columns[0]]
-
-        not_empty_cols = [(col, df.columns.get_loc(col)) for col in df.replace(' ', np.NaN).filter(like='Unnamed:').dropna(axis=1).columns]
-        empty_cols = [(col, df.columns.get_loc(col)) for col in df.columns if df[col].replace(' ',np.NaN).isnull().all() and not 'Unnamed:' in col]
-
-        cols = list(df.columns)
-        if len(not_empty_cols) == len(empty_cols):
-            for i in range(len(empty_cols)):
-                id1 = empty_cols[i][1]
-                id2 = not_empty_cols[i][1]
-                delta = id1-id2
-                for n in range(delta):
-                    cols[id2+n],cols[id2+n+1] = cols[id2+n+1],cols[id2+n]
-                    print(f'------Headers switeched: {cols[id2+n]} - {cols[id2+n+1]}')
-        df.columns = cols
-
-        df.drop(list(df.filter(like='named').columns), axis=1, inplace=True)
-
-        df.columns = df.columns.str.replace('HM', 'MH')
-
-        df.drop_duplicates(ignore_index=True, inplace=True)
-
-        if len(df)<1:
-            return
-        else:
-            drop=[]
-            for c, col in enumerate(df.columns):
-                if col == 'Date' or col == 'Datum':
-                    d=c
-                    date=col
-                    drop.append(col)
-                if col == 'Time' or col =='Uhrzeit':
-                    t=c
-                    time=col
-                    drop.append(col)
-
-            df.insert(0,'Datetime',pd.to_datetime(df[date] +' '+ df[time],dayfirst=True))
-            df.drop(drop,axis=1,inplace=True)
-
-            if df.Datetime.is_unique != True:
-                df.drop_duplicates(ignore_index=True, inplace=True, keep='last')
-            df.dropna(axis=1, how='all', inplace=True)
-            df.set_index('Datetime',inplace=True)
-            df.sort_index(axis=0, inplace=True)
-            return df
 
     ################################################################___Skript___#################################################################
     #############################################################################################################################################
 
     #Falls noch nicht vorhanden, erstelle eine neue Datenbank aus dem Archiv.
     print('1_ Datenbanken checken und ggf. erstellen...')
-    files = {}
-    master_df={}
+    files = {}      #dict with path to datasheets
+    master_df={}    #dict with database as DataFrame
     for bui in buid:
         if os.path.isfile(db[bui]):
             print('{}: Datenbank vorhanden...'.format(bui))
             continue
         else:
             print('{}: Keine Datenbank gefunden - erstelle neue aus dem Archiv...'.format(bui))
-            bui_path = os.path.join(arch_loc, bui)
-            files[bui] = [os.path.join(bui_path, fn) for fn in os.listdir(bui_path) if fn.endswith('.csv') ]
-            files[bui].sort(key=lambda x: os.path.getmtime(x))
+            bui_path = os.path.join(arch_loc, bui)  # path to current bui-folder
+            files[bui] = [os.path.join(bui_path, fn) for fn in os.listdir(bui_path) if fn.endswith('.csv') ]    # create paths to current bui's datasheets
+            files[bui].sort(key=lambda x: os.path.getmtime(x))  # sort datasheets
+            n_files = len(files[bui])
             print('loading {}...'.format(bui))
 
             df = []
-            for file in files[bui]:
+            for nf, file in enumerate(files[bui]):
+                print(f'({nf}/{n_files}) files read... ', end='\r', flush=True)
                 df.append(load_tf_file(file))
 
-            master_df[bui] = pd.concat(df)
-            if master_df[bui].index.is_unique == False:
+            master_df[bui] = pd.concat(df)  # concainate datasheets to one big DataFrame
+
+            ## remove duplicates...
+            if master_df[bui].index.is_unique == False: 
                 master_df[bui] = master_df[bui][~master_df[bui].index.duplicated(keep='first')]
                 if master_df[bui].index.is_unique:
                     print('{}: Datenbank bereinigt!'.format(bui))
+            ## remove duplicated columns
             if len(master_df[bui].filter(like='.1').columns) >0:
                 print('{}: Spalten dupliziert...'.format(bui))
+            ## warn if there is still a problem...
             master_df[bui].dropna(axis=1, how='all',inplace=True)
             if master_df[bui].index.has_duplicates:
                 print('{}: Achtung! Duplikate vorhanden!'.format(bui))
+            ## finally saving database...
             print('...postprocessing complete, exporting database now...')
             master_df[bui].to_csv(db[bui], index=True)
             print('...export finished, starting next building now.')
@@ -284,7 +293,9 @@ def main(lehrstuhl = False, send = True):
             try:
                 eb.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
             except Exception as e:
-                print(f'...senden der Nachricht war nicht erfolgreich : {e}')
+                print(f'Senden der Nachricht fehlgeschlagen: {e}')
+
+
     # send offline notification            
     who=['Roman Ficht <Roman.Ficht@tum.de>']
 
@@ -294,7 +305,7 @@ def main(lehrstuhl = False, send = True):
         text = 'Hallo,\ndas ist eine automatisch erzeugte Fehlermeldung der Einfach-Bauen-Haeuser:\n\n'
 
         for bui in offline:
-            text += 'Das ' + offline[bui]
+            text += '-> Das/Die ' + offline[bui] + '\n'
 
         if send==False:
             print(text)
@@ -303,7 +314,7 @@ def main(lehrstuhl = False, send = True):
             try:
                 eb.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
             except Exception as e:
-                print(f'Senden der Nachricht Fehlgeschlagen: {e}')
+                print(f'Senden der Nachricht fehlgeschlagen: {e}')
 
     # Füge neue Daten der Datenbank hinzu und speichere die aktualisierte Datenbank ab.
     print('4_ Speichere aktualisierte Datenbank...')

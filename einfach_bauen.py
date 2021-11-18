@@ -3,9 +3,13 @@ import config
 import update_energy_database as em
 import update_tinkerforge_database as tf
 
-def run():
-    em.main()
-    tf.main()
+
+em.main()
+tf.main()
+
+send = False 
+
+if send:
     eb.send_email(
         who=[config.emails['roman']],
         sender=config.emails['sender'],
@@ -14,5 +18,3 @@ def run():
         password=config.password,
         smtp=config.smtp
         )
-
-run()

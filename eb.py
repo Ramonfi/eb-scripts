@@ -246,6 +246,18 @@ def unmount_ls(mount=os.path.join(os.path.dirname(os.path.dirname(__file__)),'eb
     if os.path.ismount(mount) == False:
         print(f'{mount}: successfully unmounted.\n')
 
+### short name of buildings
+buid = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton'}
+
+# ID of room based on sensor-naming, which should be analysed
+wohnungen = {'N':'Nord','S':'Süd','O':'Ost'}
+wohnungen2 = {'WE1': 'N', 'WE3': 'S', 'WE2': 'O'}
+ori = {'WE1':'Nord','WE2':'Ost','WE3':'Süd'}
+wohnungen3 = {'2OG-Nord' : 'N','2OG-Ost':'O','2OG-Sued':'S'}
+rooms = {'B':'Bad', 'F':'Flur', 'K':'Küche', 'SZ':'Schlafzimmer', 'WZ':'Wohnzimmer', 'SWK':'1-Zimmer-Appartment'}
+meters = {'HQ':'Energie','VW':'Volumen','H':'Heizung','W':'Wasser'}
+airnodes = ['A1_WE1_Wohnen','A2_WE1_Innenflur','A3_WE1_Diele','A4_WE1_Schlafen','A5_WE1_Kueche','A6_WE1_Bad','A16_TH_gesamt','A18_DG_gesamt','A17_TH_gesamt','A7_WE2_Schlafen','A8_WE2_Innenflur','A9_WE2_Bad','A10_WE3_Wohnen','A11_WE3_Innenflur','A12_WE3_Diele','A13_WE3_Schlafen','A14_WE3_Kueche','A15_WE3_Bad','A19_DG_gesamt']
+
 ### path to datasheets
 dir_db = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','database')
 dir_db_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\2_datenbank'
@@ -281,6 +293,22 @@ if platform.system() == 'Darwin':
         tf_path = os.path.join(mount,'1_rohdaten')
         tf_archive = os.path.join(mount,'ARCHIV','1_rohdaten')
 
+### Construct filepaths to databases
+files ={}
+for meter in ['tf','em']:
+    if meter not in files:
+        files[meter] = {} 
+    for bui in list(buid.keys()) + ['WD','PM']:
+        path = os.path.join(dir_db,bui)
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        for fn in os.listdir(path):
+            names = fn.split('_')
+            if names[1] == meter:
+                if bui not in files[meter]:
+                    files[meter][bui] = {}
+                files[meter][bui][fn.rsplit('_',1)[-1].split('.')[0]] = os.path.join(os.path.join(path), fn)
+
 ### prepare config file for email support
 config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.py')
 if not os.path.exists(config_file):
@@ -305,34 +333,6 @@ tf = TinkerForge Sensoren\n\n\
 raw/database = unverarbeitete Datensätze. Enthalten Lücken wenn Sensoren ausfallen.\n\
 resampled = nachberarbeitete Datensätze. Haben einen durchgehenden Zeitindex (1min, 15min oder 60min). Zwischenwerte werden allerdings einfach gelöscht. Heißt nicht alle Werte sind Aussagekräftig (z.B. Fenster und Bewegungsmelder nicht!)')
         f.close()
-
-### short name of buildings
-buid = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton'}
-
-# ID of room based on sensor-naming, which should be analysed
-wohnungen = {'N':'Nord','S':'Süd','O':'Ost'}
-wohnungen2 = {'WE1': 'N', 'WE3': 'S', 'WE2': 'O'}
-ori = {'WE1':'Nord','WE2':'Ost','WE3':'Süd'}
-wohnungen3 = {'2OG-Nord' : 'N','2OG-Ost':'O','2OG-Sued':'S'}
-rooms = {'B':'Bad', 'F':'Flur', 'K':'Küche', 'SZ':'Schlafzimmer', 'WZ':'Wohnzimmer', 'SWK':'1-Zimmer-Appartment'}
-meters = {'HQ':'Energie','VW':'Volumen','H':'Heizung','W':'Wasser'}
-airnodes = ['A1_WE1_Wohnen','A2_WE1_Innenflur','A3_WE1_Diele','A4_WE1_Schlafen','A5_WE1_Kueche','A6_WE1_Bad','A16_TH_gesamt','A18_DG_gesamt','A17_TH_gesamt','A7_WE2_Schlafen','A8_WE2_Innenflur','A9_WE2_Bad','A10_WE3_Wohnen','A11_WE3_Innenflur','A12_WE3_Diele','A13_WE3_Schlafen','A14_WE3_Kueche','A15_WE3_Bad','A19_DG_gesamt']
-
-### Construct filepaths to databases
-files ={}
-for meter in ['tf','em']:
-    if meter not in files:
-        files[meter] = {} 
-    for bui in list(buid.keys()) + ['WD','PM']:
-        path = os.path.join(dir_db,bui)
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        for fn in os.listdir(path):
-            names = fn.split('_')
-            if names[1] == meter:
-                if bui not in files[meter]:
-                    files[meter][bui] = {}
-                files[meter][bui][fn.rsplit('_',1)[-1].split('.')[0]] = os.path.join(os.path.join(path), fn)
 
 ### Construct dict with room areas....
 idx = [(item.split('_')[1], item.split('_')[0]) for item in airnodes]
@@ -381,6 +381,7 @@ eb_bbox = {
             }
 
 def set_rc_eb():
+    
     #fontsizes
     SMALL_SIZE = 9
     MEDIUM_SIZE = 10
