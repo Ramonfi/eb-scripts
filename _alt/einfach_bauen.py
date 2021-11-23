@@ -1,7 +1,7 @@
 import eb
 import config
-import update_energy_database as em
-import update_tinkerforge_database as tf
+import _alt.update_energy_database as em
+import _alt.update_tinkerforge_database as tf
 
 
 em.main(lehrstuhl=True)

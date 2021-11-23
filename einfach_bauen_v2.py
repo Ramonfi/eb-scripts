@@ -8,8 +8,14 @@ import eb
 import logging as log
 import config
 
+##############################################################___User Inputs___##############################################################
+#############################################################################################################################################
+lehrstuhl = False
+send = False
+
 ###############################################################___Functions___###############################################################
 #############################################################################################################################################
+
 def load_tf_file(path):
     df = pd.read_csv(
         path,
@@ -32,7 +38,7 @@ def load_tf_file(path):
             delta = id1-id2
             for n in range(delta):
                 cols[id2+n],cols[id2+n+1] = cols[id2+n+1],cols[id2+n]
-                print(f'------Headers switeched: {cols[id2+n]} - {cols[id2+n+1]}')
+                log.info(f'Headers switched: {cols[id2+n]} - {cols[id2+n+1]}')
     df.columns = cols
 
     df.drop(list(df.filter(like='named').columns), axis=1, inplace=True)
@@ -65,6 +71,9 @@ def load_tf_file(path):
         df.sort_index(axis=0, inplace=True)
         return df
 
+########################################################## Set environmental values #########################################################
+#############################################################################################################################################
+
 log.basicConfig(
     format='%(asctime)s -- %(levelname)s -- %(message)s', 
     datefmt='%d.%m.%Y %H:%M:%S', 
@@ -76,14 +85,14 @@ log.basicConfig(
     )
 
 log.info(f'---------- START ----------')
-lehrstuhl = False
-log.info(f'Export to Lehrstuhl = {lehrstuhl}.')
-send = False
-log.info(f'eMail versand = {send}.')
+log.info(f'Export auf Lehrstuhllaufwerk = {lehrstuhl}.')
+log.info(f'eMail Versand = {send}.')
+log.info(f'------ EnergyMeter ------')
 
-log.info(f'Start EnergyMeter.')
-##############################################################___Input Daten___##############################################################
+
+########################################################## Set environmental values #########################################################
 #############################################################################################################################################
+
 #paths
 em_path = eb.em_path    #new datasheets
 files = [os.path.join(em_path,name) for name in os.listdir(em_path)]
@@ -121,7 +130,7 @@ for bui in db:
     if os.path.isdir(os.path.dirname(db[bui])) == False:
         os.makedirs(os.path.dirname(db[bui]))
 
-################################################################___Skript___#################################################################
+################################################################ MAIN SCRIPT ################################################################
 #############################################################################################################################################
 
 data = []
@@ -209,10 +218,10 @@ if lehrstuhl:
 if not os.path.isdir(exdir):
     os.makedirs(exdir)
 f.savefig(os.path.join(exdir,f'EM_Monitoring_Datenempfang_Übersicht.png'),dpi=300)
-log.info(f'finished!')
+log.info(f'------ EnergyMeter finished! ------')
 
 #Falls noch nicht vorhanden, erstelle eine neue Datenbank aus dem Archiv.
-log.info(f'Starte TinkerForge.')
+log.info(f'------ Starte TinkerForge ------')
 files = {}      #dict with path to datasheets
 master_df={}    #dict with database as DataFrame
 log.info(f'Suche vorhandene Datenbank.')
@@ -309,7 +318,7 @@ for bui in buid_long:
         last_file = dropbox_files[bui].pop(-1)
         log.info(f'{bui}: Datei von Heute ({os.path.basename(last_file)}) wird übersprungen!')
     if last_day.date() < last_day_soll:
-        offline[bui] = '{} liefert seit {} ({} Tage(n)) keine neuen Daten mehr.'.format(buid_long[bui],last_day.to_pydatetime().strftime('%d.%m.%Y'),((dt.datetime.today()-last_day.to_pydatetime()).days))
+        offline[bui] = f'{buid_long[bui]} liefert seit {last_day.to_pydatetime().strftime("%d.%m.%Y")} ({((dt.datetime.today()-last_day.to_pydatetime()).days)} Tage(n)) keine neuen Daten mehr.'
         log.info(offline[bui])
 
     log.info(f'{bui}: Durchsuche Dropbox nach neuen Datensätzen.')
@@ -381,10 +390,10 @@ for bui in list(notification):
     for key in list(notification[bui]):
         if 'named' in key:
             notification[bui].pop(key)
-            print(key, 'removed!')
+            log.warning(f'{bui}: unnamed column in data.')
 
 if len(offline) == 0 and len(notification) == 0:
-    os.log('Keine neuen Datensätze oder alles läuft einwandfrei...')
+    log.info('Keine neuen Datensätze oder alles läuft einwandfrei...')
 else:
     text = 'Hallo,\ndie folgenden Sensoren haben in den vergangenen Tagen ungewöhnlich wenige Daten aufgezeichnet:\n\nHinweis:\nDie Liste führt Tage auf, an denen ein Sensor weniger als 90% der Datensätze aufgezeichnet hat. Fehlende Tage in der Aufzählung bedeuten, dass an diesen Tagen mehr als 90% der Daten aufgezeichnet wurden\n'
 
@@ -402,7 +411,7 @@ else:
                 for day in notification[bui][sensor]:
                     text += '\t{}: {}% Messwerte vorhanden.\n'.format(day, notification[bui][sensor][day])
         if send==False:
-            log.info(text)
+            log.debug(text)
 
     if len(notification) > 0 and send==True:
         try:
@@ -421,7 +430,7 @@ else:
         text += '-> Das/Die ' + offline[bui] + '\n'
 
     if send==False:
-        log.info(text)
+        log.debug(text)
 
     if len(offline) > 0 and send==True:
         try:
@@ -488,7 +497,7 @@ else:
             df_resampled = database[bui].resample(ts).last().asfreq(ts)
             
             df_resampled.to_csv(os.path.join(db_loc,bui,'{}_tf_database_resampled_{}.csv'.format(bui, ts)))
-            log.info(f'{bui}: Resampled auf {ts}')
+            log.debug(f'{bui}: Resampled auf {ts}')
         log.info(f'{bui}: Datenbanken exportiert!')
 log.info('TinkerForge Update komplett!')
 log.info(f'---------- FINISHED ----------')
