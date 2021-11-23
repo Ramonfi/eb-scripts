@@ -4,8 +4,8 @@ import update_energy_database as em
 import update_tinkerforge_database as tf
 
 
-em.main()
-tf.main()
+em.main(lehrstuhl=True)
+tf.main(lehrstuhl=True)
 
 send = False 
 

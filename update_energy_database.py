@@ -4,12 +4,25 @@ import datetime as dt
 import os
 import matplotlib.pyplot as plt
 import eb
+import logging as log
+
 
 
 def main(lehrstuhl=False):
+    log.basicConfig(
+        format='%(asctime)s -- %(levelname)s -- %(message)s', 
+        datefmt='%d.%m.%Y %H:%M:%S', 
+        level=log.INFO,
+        encoding='utf-8',
+        handlers=[
+            log.FileHandler("debug.log"),
+            log.StreamHandler()]
+        )
+
+    log.info(f'Start Wärmemengenzähler')
+    log.info(f'Export to Lehrstuhl = {lehrstuhl}')
     ##############################################################___Input Daten___##############################################################
     #############################################################################################################################################
-
     #paths
     em_path = eb.em_path    #new datasheets
     files = [os.path.join(em_path,name) for name in os.listdir(em_path)]
@@ -23,7 +36,7 @@ def main(lehrstuhl=False):
     name_file = 'energymeter.config'
     name_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),name_file)
     if not os.path.isfile(name_file):
-        print('config file nicht gefunden...!')
+        log.warning('name-file nicht gefunden...!')
         quit()
     meters = pd.read_csv(name_file,sep=';')
 
@@ -34,14 +47,13 @@ def main(lehrstuhl=False):
     #############################################################################################################################################
     data = []
     # reading datasheets
-    print(f'-reading files from Database...')
+    log.info(f'Start reading files from Database.')
+
     for nf, fn in enumerate(files):
-        print(f'({nf}/{n_files}) files read... ', end='\r', flush=True)
+        eb.running_bar(nf,n_files)
         datasheet =         pd.read_csv(fn,  
             engine='python',
             sep=';',
-            #dayfirst=True,
-            #infer_datetime_format=True,
             na_values=['-','#N/V','#NV'],
             decimal= ','
         )
@@ -51,7 +63,8 @@ def main(lehrstuhl=False):
     df = pd.concat(data,ignore_index=True)
 
     # postprocessing data
-    print(f'--finished reading files. Starting postprocessing...')
+    log.info(f'finished reading files. Starting postprocessing.')
+
     df = df[df['Datetime']>start]       #set start date
     df = df.dropna(axis = 1,how='all')  #drop empty columns
     df = df.drop(axis=1,labels=['ID','SN','IP','State'])    #drop irelevant columns
@@ -67,18 +80,13 @@ def main(lehrstuhl=False):
     df = df.set_index(['bui','app', 'type', 'Datetime']).sort_index()       # sort DataFrame
 
     ## extracting variants
-    variants = {}
-    variants['wohnung'] = list(meters.Wohnung.unique())
-    variants['haus'] = list(meters.Haus.unique())
-    variants['meter'] = list(meters.Medium.unique())
-    for key in variants:
-        variants[key].sort()
+    buids_em = list(meters.Haus.unique())
 
     # exporting database
-    print(f'---starting export to {db_loc}...')
+    log.info(f'starting export to {db_loc}.')
 
     ## creating paths to database
-    export = {bui : os.path.join(db_loc, bui) for bui in variants['haus']}
+    export = {bui : os.path.join(db_loc, bui) for bui in buids_em}
     for bui in export:
         if os.path.isdir(export[bui]) == False:
             os.makedirs(export[bui])
@@ -94,7 +102,8 @@ def main(lehrstuhl=False):
             database[bui].resample(ts).fillna('pad').to_csv(os.path.join(export[bui], f'{bui}_em_resampled_{ts}.csv'))  # saving reshaped database
 
     # plotting graph...
-    print(f'----creating overview graph...')
+    log.info(f'creating overview graph.')
+
     ## preparing data
     timemax = max([database[bui].index.max().date() for bui in eb.buid])
     level_values = df.index.get_level_values
@@ -121,4 +130,7 @@ def main(lehrstuhl=False):
     if not os.path.isdir(exdir):
         os.makedirs(exdir)
     f.savefig(os.path.join(exdir,f'EM_Monitoring_Datenempfang_Übersicht.png'),dpi=300)
-    print(f'finished!')
+    log.info(f'finished!')
+
+if __name__ == "__main__":
+    main()

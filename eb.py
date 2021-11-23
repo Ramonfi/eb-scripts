@@ -21,7 +21,20 @@ def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
         'trunc({n},{a:.2f},{b:.2f})'.format(n=cmap.name, a=minval, b=maxval),
         cmap(np.linspace(minval, maxval, n)))
     return new_cmap
-    
+
+def running_bar(m, m_max):
+    m_max = m_max-1
+    n = int((m/m_max)*100)
+    s = 'loading <' + (n)*'|' + (100-n) * '-' + f'> {n} %       '
+    if m < m_max:
+        print(s,end='\r',flush=True)
+    if m == m_max:
+        print(s,end='\r',flush=True)
+        s2 = 'finished!'
+        s = s2 + (len(s)-len(s2))*' '
+        print(s,end='\r')
+
+
 def recolor_lines(ax,cmap,minint=0,maxint=1):
     num_plots = len(ax.lines)
     cmap = truncate_colormap(cmap,minint,maxint,100)
