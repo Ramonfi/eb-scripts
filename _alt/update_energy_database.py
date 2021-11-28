@@ -3,7 +3,7 @@ import pandas as pd
 import datetime as dt
 import os
 import matplotlib.pyplot as plt
-import eb
+import eb as eb
 import logging as log
 
 

@@ -3,7 +3,7 @@ import os
 import datetime as dt
 import pandas as pd
 import numpy as np
-import eb
+import eb as eb
 import config
 
 ###############################################################___Functions___###############################################################
