@@ -10,6 +10,7 @@ import config
 
 ##############################################################___User Inputs___##############################################################
 #############################################################################################################################################
+
 lehrstuhl = False
 send = False
 
@@ -38,7 +39,7 @@ def load_tf_file(path):
             delta = id1-id2
             for n in range(delta):
                 cols[id2+n],cols[id2+n+1] = cols[id2+n+1],cols[id2+n]
-                log.info(f'Headers switched: {cols[id2+n]} - {cols[id2+n+1]}')
+                log.info(f'--- Headers switched: {cols[id2+n]} - {cols[id2+n+1]}')
     df.columns = cols
 
     df.drop(list(df.filter(like='named').columns), axis=1, inplace=True)
@@ -246,10 +247,10 @@ for bui in buid:
         if master_df[bui].index.is_unique == False: 
             master_df[bui] = master_df[bui][~master_df[bui].index.duplicated(keep='first')]
             if master_df[bui].index.is_unique:
-                log.info(f'{bui}: Doppelte Zeilen entfernt.')
+                log.warning(f'{bui}: Doppelte Zeilen entfernt.')
         ## remove duplicated columns
         if len(master_df[bui].filter(like='.1').columns) >0:
-            log.info(f'{bui}: Doppelte Spalten entfernt.')
+            log.warning(f'{bui}: Doppelte Spalten entfernt.')
         ## warn if there is still a problem...
         master_df[bui].dropna(axis=1, how='all',inplace=True)
         if master_df[bui].index.has_duplicates:
@@ -260,7 +261,7 @@ for bui in buid:
         log.info(f'{bui}: Speichern der Datenbank erfolgreich.')
 
 #öffne vorhandene Datenbanken...
-log.info(f'{bui}: Öffne Datenbank.')
+log.info(f'Lade vorhandene Datenbanken.')
 database = {}
 for bui in db:
     try:
@@ -269,14 +270,17 @@ for bui in db:
         if bui == 'PM':
             database[bui] = database['LB'].filter(like='DA')
             database[bui].columns = ['Global W/m^2','Direct W/m^2','Diffuse W/m^2']
+    # check database consistency
     if database[bui].index.has_duplicates:
         try:
             database[bui] = database[bui][~database[bui].index.duplicated(keep='first')]
+            log.info(f'{bui} ok.')
         except Exception as e:
             log.warning(f'{bui} Fehler: {e}')
         finally: 
             if database[bui].index.is_unique:
-                log.info(f'{bui} Indexfehler behoben!')
+                log.warning(f'{bui} Indexfehler behoben!')
+                log.info(f'{bui} ok.')
 
 
 #Öffne Messdaten aus Dropbox die noch nicht in der Datenbank sind...
@@ -295,10 +299,11 @@ for bui in buid_long:
             database[bui] = database['LB'].filter(like='DA')
             database[bui].columns = ['Global W/m^2','Direct W/m^2','Diffuse W/m^2']
     if database[bui].index.is_unique == False:
+        log.warning(f'{bui}: Achtung! Datensatz enthält Duplikate.')
         try:
             database[bui] = database[bui][~database[bui].index.duplicated(keep='first')]
             if database[bui].indes.is_unique:
-                log.info(f'{bui}: Datenbank bereinigt!')
+                log.warning(f'{bui}: Datenbank bereinigt!')
             else:
                 log.warning(f'{bui}: Datenbankfehler, überspringe Gebäude!')
                 continue
@@ -359,7 +364,7 @@ for bui in buid_long:
             newdate = pd.to_datetime(test.index.values.min()).date()
             newday = load_tf_file(file)
 
-            log.info(f'{newdate}: Neue Datei gefunden!')
+            log.info(f'--- {newdate}: Neue Datei gefunden!')
 
             for sensor in newday:
                 check = newday[sensor].isna().sum()/len(newday.index)
@@ -376,11 +381,11 @@ for bui in buid_long:
         if dropbox_df[bui].index.has_duplicates:
             log.warning(f'{bui}: Datenbank enthält Duplikate!')
             dropbox_df[bui] = dropbox_df[bui][~dropbox_df[bui].index.duplicated(keep='first')]
-            log.info(f'{bui}: Duplikate bereinigt.')
+            log.warning(f'{bui}: Duplikate bereinigt.')
         if len(dropbox_df[bui].filter(like='.1').columns) >0:
             for col in dropbox_df[bui].filter(like='.1'):
                 log.warning(f'Achtung: {col} wurde dupliziert statt ergänzt...')
-        log.info('Speichere neue Datensätze in Dictionary und fahre fort...')
+        log.info(f'{bui}: Speichere neue Datensätze in Dictionary und fahre fort...')
     except:
         log.info(f'{bui}: Keine neue Datei(en) gefunden.')
         continue
