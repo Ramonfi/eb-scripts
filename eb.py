@@ -240,24 +240,22 @@ def load_amb(path):
 
 
 #########################################################  USER INPUTS  #############################################################################
-def mount_ls(mount):
-    server = 'nas.ads.mwn.de'
-    share = '/tuar/l15/private/DATA/FORSCHUNG/04_Projekte/2021/Einfach_Bauen_3/Daten/'
+def mount_ls(server='nas.ads.mwn.de', share='/tuar/l15/private/DATA/FORSCHUNG/04_Projekte/2021/Einfach_Bauen_3/Daten/', local_mount=None):
 
-    print(f'\ntrying to mount \n\t{server}{share}\non\n\t{mount}\n')
+    print(f'\ntrying to mount \n\t{server}{share}\non\n\t{local_mount}\n')
     user = input(f'Enter the username on {server}:\n')
     password = getpass(f'Enter the password for user {user} on {server}:\n')
     pw = urllib.parse.quote_plus(password)
 
-    os.system(f'mount_smbfs -o automounted -N "//{user}:{pw}@{server}{share}" "{mount}"')
+    os.system(f'mount_smbfs -o automounted -N "//{user}:{pw}@{server}{share}" "{local_mount}"')
 
-    if os.path.ismount(mount):
-        print(f'{mount}: successfully mounted.\n')
+    if os.path.ismount(local_mount):
+        print(f'{local_mount}: successfully mounted.\n')
 
-def unmount_ls(mount=os.path.join(os.path.dirname(os.path.dirname(__file__)),'eb-remote')):
-    os.system(f'umount {mount}')
-    if os.path.ismount(mount) == False:
-        print(f'{mount}: successfully unmounted.\n')
+def unmount_ls(local_mount=os.path.join(os.path.dirname(os.path.dirname(__file__)),'eb-remote')):
+    os.system(f'umount {local_mount}')
+    if os.path.ismount(local_mount) == False:
+        print(f'{local_mount}: successfully unmounted.\n')
 
 ### short name of buildings
 buid = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton'}
@@ -297,7 +295,7 @@ if platform.system() == 'Darwin':
         os.makedirs(mount)
 
     if os.path.ismount(mount) == False:
-        mount_ls(mount)
+        mount_ls(local_mount = mount)
 
     if os.path.ismount(mount):
         dir_db_ls = os.path.join(mount,'2_datenbank')
