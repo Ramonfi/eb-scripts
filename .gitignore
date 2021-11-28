@@ -117,3 +117,6 @@ dmypy.json
 *config.py
 test*
 _alt/
+eb-data/
+eb-remote/
+database/

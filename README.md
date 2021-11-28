@@ -1,5 +1,7 @@
 # eb-scripts
  Skripte um die Messdaten der Einfach-Bauen Häuser auszuwerten
+-----
+outdated ::: NEEDS UPDATE!!!
 
 ## eb.py
 Dieses Modul enthält generelle Daten und Funktionen die von den anderen Skripten abgerufen werden.

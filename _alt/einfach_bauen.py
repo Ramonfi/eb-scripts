@@ -1,5 +1,5 @@
 import eb as eb
-import config
+import src.config as config
 import _alt.update_energy_database as em
 import _alt.update_tinkerforge_database as tf
 
