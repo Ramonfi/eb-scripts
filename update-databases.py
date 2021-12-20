@@ -12,11 +12,14 @@ import eblib.utilities as ut
 ##############################################################___User Inputs___##############################################################
 #############################################################################################################################################
 
+# Welche Datensätze sollen aktualisiert werden?
 tinkerforge = True
 energymeter = True
 
+# Export auf Lehrstuhllaufwerk?
 lehrstuhl = False
-send = False
+# Soll ein Bericht per eMail verschickt werden?
+send = True
 
 ###############################################################___Functions___###############################################################
 #############################################################################################################################################
@@ -62,11 +65,9 @@ def load_tf_file(path):
         drop=[]
         for c, col in enumerate(df.columns):
             if col == 'Date' or col == 'Datum':
-                d=c
                 date=col
                 drop.append(col)
             if col == 'Time' or col =='Uhrzeit':
-                t=c
                 time=col
                 drop.append(col)
 
@@ -100,9 +101,6 @@ else:
     log.info(f'Export in lokales Verzeichnis.')
 if send:
     log.info(f'eMail-Updates aktiviert.')
-
-
-
 
 ########################################################## Set environmental values #########################################################
 #############################################################################################################################################
@@ -146,6 +144,7 @@ for bui in db:
 
 ################################################################ MAIN SCRIPT ################################################################
 #############################################################################################################################################
+
 if energymeter:
     log.info(f'------ EnergyMeter ------')
     data = []
@@ -277,7 +276,7 @@ if tinkerforge:
             master_df[bui].to_csv(db[bui], index=True)
             log.info(f'{bui}: Speichern der Datenbank erfolgreich.')
 
-    #öffne vorhandene Datenbanken...
+    #Öffne vorhandene Datenbanken...
     log.info(f'Öffne vorhandene Datenbanken und speichere sie im Arbeitsspeicher.')
     database = {}
     for bui in db:
