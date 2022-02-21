@@ -37,12 +37,12 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='op',ms=None,legend_ms=None):
         +df[(df.TAMB > 32) & (df.TROOM > 24) & (df.TROOM < 28)].shape[0]
         ) / length_data) * 100
 
-    untergradstunden = (
+    untertemperaturstunden = (
         df[(df.TAMB < 16) & (df.TROOM < 20)].shape[0] 
         + df[((df.TAMB >= 16) & (df.TAMB <= 32)) & (df.TROOM < 16 + 0.25*df.TAMB)].shape[0]
         +df[(df.TAMB > 32) & (df.TROOM < 24)].shape[0])
 
-    uebergradstunden = (
+    uebertemperaturstunden = (
         df[(df.TAMB < 16) & (df.TROOM > 24)].shape[0] 
         + df[((df.TAMB >= 16) & (df.TAMB <= 32)) & (df.TROOM > 20 + 0.25*df.TAMB)].shape[0]
         +df[(df.TAMB > 32) & (df.TROOM > 28)].shape[0])
@@ -61,37 +61,36 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='op',ms=None,legend_ms=None):
         r"$\bf{" + str(int(comf)) + str('\%') + "}$" + f' der Messpunkte\nim Komfortbereich',
         xy=(df.TAMB.mean(), df.TROOM.mean()), 
         xycoords='data',
-        xytext=(0.35, 0.85), 
+        xytext=(0.4, 0.85), 
         textcoords='axes fraction',
         arrowprops=dict(arrowstyle="->"),
         bbox=style.eb_bbox,
         horizontalalignment='center', 
         verticalalignment='top')
 
-    if uebergradstunden > 0:
-        text1 = r"$\bf{" + str('Übergradstunden') + "}$" + f':\n{uebergradstunden}'
+    if uebertemperaturstunden > 0:
+        text1 = r"$\bf{" + str('Übertemperaturstunden') + "}$" + f':\n{uebertemperaturstunden}'
         ax.text(
-            0.05,
-            0.95, 
+            -13,
+            28, 
             text1.strip(),      
             style='normal', 
             ha = 'left', 
             va = 'top',
-            transform=ax.transAxes,
+            #transform=ax.transAxes,
             bbox=style.eb_bbox, 
             )
-    if untergradstunden > 0:
-        text2 = r"$\bf{" + str('Untergradstunden') + "}$" + f':\n{untergradstunden}'
+    if untertemperaturstunden > 0:
+        text2 = r"$\bf{" + str('Untertemperaturstunden') + "}$" + f':\n{untertemperaturstunden}'
         ax.text(
-            0.95,
-            0.3, 
-
+            40,
+            16, 
             text2.strip(),      
             style='normal', 
             ha = 'right', 
             va = 'bottom',
-            transform=ax.transAxes,
-            #bbox=style.eb_bbox, 
+            #transform=ax.transAxes,
+            bbox=style.eb_bbox, 
             )
 
     ax.plot(
@@ -232,22 +231,22 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
                 item.set_label('operative Raumtemperatur')
 
         results = komfortstunden(df)
-        text2 = r"$\bf{" + str('Untergradstunden') + "}$" + '\n'
-        text1 = r"$\bf{" + str('Übergradstunden') + "}$" + '\n'
+        text2 = r"$\bf{" + str('Untertemperaturstunden') + "}$" + '\n'
+        text1 = r"$\bf{" + str('Übertemperaturstunden') + "}$" + '\n'
         for key in results:
             if key == 'upper':
                 for kat in results[key]:
                     if results[key][kat] > 0:
                         text1 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
                 ax.text(
-                    0.1,
-                    0.95, 
+                    9,
+                    31, 
                     text1.strip(),      
                     style='normal', 
                     ha = 'left', 
                     va = 'top',
-                    transform=ax.transAxes,
-                    #bbox=style.eb_bbox, 
+                    #transform=ax.transAxes,
+                    bbox=style.eb_bbox, 
                     )
             if key == 'lower':
                 for kat in results[key]:
@@ -255,14 +254,14 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
                     if results[key][kat] > 0:
                         text2 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
                 ax.text(
-                    0.9,
-                    0.15, 
+                    30,
+                    17, 
                     text2.strip(),      
                     style='normal', 
                     ha = 'right', 
                     va = 'bottom',
-                    transform=ax.transAxes,
-                    #bbox=style.eb_bbox, 
+                    #transform=ax.transAxes,
+                    bbox=style.eb_bbox, 
                     )
             
         ax.legend(
@@ -275,7 +274,7 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
             frameon=False)
              
     ax.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]')
-    ax.set_xlim(8,32)
+    ax.set_xlim(8,30)
     if mode=='air':
         ax.set_ylabel('Raumlufttemperatur\n[°C]')
     if mode=='op':
@@ -469,7 +468,7 @@ def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,l
 
     ax.legend(
         loc='upper left',
-        ncol=99,
+        ncol=2,
         #bbox_to_anchor=(0.025,1,1,0.125),
         markerscale = legend_ms,
         frameon=False)

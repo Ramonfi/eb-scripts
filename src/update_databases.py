@@ -3,7 +3,7 @@ import numpy as np
 import datetime as dt
 import os
 import matplotlib.pyplot as plt
-import src.project_definitions as eb
+#import src.project_definitions as eb
 import logging as log
 import src.config as config
 import sys
@@ -12,20 +12,21 @@ import src.utilities as ut
 ###############################################################___Functions___###############################################################
 #############################################################################################################################################
 
-def load_tf_file(path):
+def load_tf_file(path, nrows=None, debug = False):
     df = pd.read_csv(
         path,
         engine='python',
-        encoding= 'unicode_escape',
+        encoding= 'latin-1',
         sep=';',
+        nrows=nrows,
         na_values=['-',' ','#N/V','#NV'],
         decimal=',',
         index_col=False)
     
-    df = df[df.iloc[:, 0] != df.columns[0]]
+    df = df[df.iloc[:, 0] != df.columns[0]].copy()
 
     if len(df) < 1:
-        return
+        return 
 
     not_empty_cols = [(col, df.columns.get_loc(col)) for col in df.replace(' ', np.NaN).filter(like='Unnamed:').dropna(axis=1).columns]
     cols = df.columns.to_list()
@@ -39,12 +40,21 @@ def load_tf_file(path):
         delta = (j - not_empty_col[1])
         for n in range(delta):
             cols[i+n],cols[i+n+1] = cols[i+n+1],cols[i+n]
-            print(f'{cols[i+n]} <-> {cols[i+n+1]}')
+            if debug:
+                print(f'{cols[i+n]} <-> {cols[i+n+1]}')
         df.columns = cols
 
     df.drop(list(df.filter(like='named').columns), axis=1, inplace=True)
-
+    if '-->Extra-Sensors-->' in df.columns:
+        df.drop(['-->Extra-Sensors-->'], axis=1, inplace=True)
     df.columns = df.columns.str.replace('HM', 'MH')
+    df.columns = df.columns.str.replace('(Â°C)', '(°C)', regex=False)
+    df.columns = df.columns.str.replace('[Black Globe] ', '', regex=False)
+    df.columns = df.columns.str.replace(f'[LB_Black Globe] ', '', regex=False)
+    df.columns = df.columns.str.replace(f'[MW_Black Globe] ', '', regex=False)
+    df.columns = df.columns.str.replace(f'[MH_Black Globe] ', '', regex=False)
+    df.columns = df.columns.str.replace(f'[HM_Black Globe] ', '', regex=False)
+    df.columns = df.columns.str.replace(f'[LB_Black Globe_Metal] ', '', regex=False)
 
     df.drop_duplicates(ignore_index=True, inplace=True)
 
@@ -83,29 +93,43 @@ log.basicConfig(
         log.StreamHandler()]
     )
 
+## Dateipfade
 
-#Speicherort für neue Tinker-Forge Datensätze:
-dropbox = eb.tf_path
+# Datenbanken
+dir_db = './eb-data/database'
 
-#Speicherort von allen alten (TinkerForge-)Datensätzen (Vor der Dropbox...)
-arch_loc = eb.tf_archive
+# Ordner für Auswertungen
+dir_results = './eb-data/Results'
+
+### Rohdaten (Dropbox, Archiv & co)
+## 1) Energy Monitoring
+em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
+
+## 2) Tinkerforge Dropbox Sync
+tf_dropbox = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
+
+## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
+tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
+
+# Kürzel der Messdaten
+buid ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
+
 
 ########################################################## Set environmental values #########################################################
 #############################################################################################################################################
 
-
 #Dateikürzel im Archiv
-buid = ['LB','MH','MW','WD']
-buid_long ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
+#buid = ['LB','MH','MW','WD']
+#buid_long ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
 
 ################################################################ MAIN SCRIPT ################################################################
 #############################################################################################################################################
 
-def energymeter(send=True, plot=False):
+def energymeter_update(send=True, plot=False):
     log.info(f'------ EnergyMeter ------')
 
     # Speicherort für neue Moiline Datensätze
-    files = [os.path.join(eb.em_path,name) for name in os.listdir(eb.em_path)]
+    files = [os.path.join(em_dropbox,name) for name in os.listdir(em_dropbox)]
     n_files = len(files)
 
     # Öffne Config-File zur Zuordnung der Moiline Senoren zu den Wohneinheiten
@@ -121,9 +145,6 @@ def energymeter(send=True, plot=False):
     data = []
     # reading datasheets
     log.info(f'Reading files.')
-
-    # Speicherort der Einfach-Bauen-Datenbanken
-    db_loc = eb.dir_db
 
     # Lese die einzelnen Datensheets ein...
     for nf, fn in enumerate(files):
@@ -164,10 +185,10 @@ def energymeter(send=True, plot=False):
     log.info(f'Postprocessing finished.')
 
     # exporting database
-    log.info(f'Starting export to directory: {db_loc}.')
+    log.info(f'Starting export to directory: {dir_db}.')
 
     ## creating paths to database
-    export = {bui : os.path.join(db_loc, bui) for bui in list(meters.Haus.unique())}
+    export = {bui : os.path.join(dir_db, bui) for bui in list(meters.Haus.unique())}
     for bui in export:
         if os.path.isdir(export[bui]) == False:
             os.makedirs(export[bui])
@@ -187,7 +208,7 @@ def energymeter(send=True, plot=False):
         log.info(f'creating overview graph.')
 
         ## preparing data
-        timemax = max([database[bui].index.max().date() for bui in eb.buid])
+        timemax = max([database[bui].index.max().date() for bui in buid])
         level_values = df.index.get_level_values
         result = (df.groupby([level_values(i) for i in [0,1,2]]
                             +[pd.Grouper(freq='D', level=-1)]).size())  # count observations
@@ -206,207 +227,186 @@ def energymeter(send=True, plot=False):
         f.tight_layout()
 
         ## exporting graph.
-        exdir = os.path.join(eb.dir_results,'Allgemein')
+        exdir = os.path.join(dir_results,'Allgemein')
         if not os.path.isdir(exdir):
             os.makedirs(exdir)
         f.savefig(os.path.join(exdir,f'EM_Monitoring_Datenempfang_Übersicht.png'),dpi=300)
     log.info(f'EnergyMeter: FINISHED')
 
-def tinkerforge(send=True, OverwriteDatabase=False):
-    log.info(f'------ Starte TinkerForge ------')
-    # Export Ordner
-    db_loc = eb.dir_db      #database location
 
-    #Erstelle Pfade zu den tinkerforge Datenbanken
-    db = {bui : os.path.join(db_loc,bui,'{}_tf_raw.csv'.format(bui)) for bui in buid_long}
+def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[]):
+    log.info(f'------ Starte TinkerForge ------')
+    ## Erstelle Pfade zu den tinkerforge Datenbanken
+    db = {bui : os.path.join(dir_db,bui,'{}_tf_raw.csv'.format(bui)) for bui in buid}
+    ## Falls der Datenbank-Ordner noch nicht existiert, erstelle ihn.
     for bui in db:
         if os.path.isdir(os.path.dirname(db[bui])) == False:
             os.makedirs(os.path.dirname(db[bui]))
 
-    files = {}      #dict with path to archived datasheets
-    master_df={}    #dict with database as DataFrame
+    files = {}                                                          #dict with path to archived datasheets
+    master_df={}                                                        #dict with database as DataFrame
+
+
     log.info(f'Suche vorhandene Datenbank.')
-    for bui in buid:
-        if not OverwriteDatabase and os.path.isfile(db[bui]):
-            log.info(f'{bui}: Datenbank gefunden!')
-            continue
-        else:
-            log.info(f'{bui}: Keine Datenbank gefunden - erstelle neue aus dem Archiv.')
-            bui_path = os.path.join(arch_loc, bui)  # path to current bui-folder
-            files[bui] = [os.path.join(bui_path, fn) for fn in os.listdir(bui_path) if fn.endswith('.csv') ]    # create paths to current bui's datasheets
-            files[bui].sort(key=lambda x: os.path.getmtime(x))  # sort datasheets
-            n_files = len(files[bui])
-            df = []
-            for nf, file in enumerate(files[bui]):
-                ut.running_bar(nf,n_files)
-                df.append(load_tf_file(file))
+    for bui in buid:                                                        # Starte Import Datensheet. Iteration über die Einheiten (LB, MH, MW, PM, WD)
+        if bui not in skip:                                                 # Skippe benutzerdefinierte Varianten.
+            export_databases = False
+            tf_drop_bui = os.path.join(tf_dropbox,bui)                      # Konstruiere den Pfad zum Dropbox Ordner der aktuellen Einheit
+            if os.path.isfile(db[bui]) and bui not in OverwriteDatabase:    # Hysterese: Wenn Datenbank schon vorhanden ist und Bauweise nicht in der Liste der zu überschreibenden Bauweisen ist, dann öffne die Vorhandene Datenbank
+                master_df[bui] = pd.read_csv(db[bui], low_memory=False, index_col='Datetime')   # Öffne die vorhandene Datenbank aus dem Ordner
+                last_data = pd.to_datetime(master_df[bui].index).max().date()-dt.timedelta(10)  # Konstruiere den Datenstand der Datenbank. Ziehe Toleranz von 10 Tagen ab.
+                log.info(f'{bui}: Vorhandene Datenbank geöffnet!')
+                # Suche nach neuen Datensätzen in der Dropbox
+                dropbox_files = {}
+                offline = {}
+                notification = {}
 
-            master_df[bui] = pd.concat(df)  # concainate datasheets to one big DataFrame
-            log.info(f'{bui}: Archivierte Datensätze geladen. Erstelle Datenbank.')
-            ## remove duplicates...
-            if master_df[bui].index.is_unique == False: 
-                master_df[bui] = master_df[bui][~master_df[bui].index.duplicated(keep='first')]
-                if master_df[bui].index.is_unique:
-                    log.warning(f'{bui}: Doppelte Zeilen entfernt.')
-            ## remove duplicated columns
-            if len(master_df[bui].filter(like='.1').columns) >0:
-                log.warning(f'{bui}: Doppelte Spalten entfernt.')
-            ## warn if there is still a problem...
-            master_df[bui].dropna(axis=1, how='all',inplace=True)
-            if master_df[bui].index.has_duplicates:
-                log.warning(f'{bui}: Indexfehler in der (Archiv)-Datenbank!')
-            ## finally saving database...
-            log.info(f'{bui}: Erstellen der neuen Datenbank abgeschlossen. Exportiere die Datenbank.')
-            master_df[bui].to_csv(db[bui], index=True)
-            log.info(f'{bui}: Speichern der Datenbank erfolgreich.')
+                dropbox_path = os.path.join(tf_dropbox, bui)    # Konstruiere den Dateipfad zum DropboxOrdner der aktuellen Einheit 
+                dropbox_files[bui] = [os.path.join(dropbox_path, fn) for fn in os.listdir(dropbox_path) if fn.endswith(f'{bui}.csv') and dt.datetime.fromtimestamp(os.path.getmtime(os.path.join(dropbox_path, fn))).date() > last_data]  # Konstruiere die Pfade zu den einzelnen Datensheets
+                dropbox_files[bui].sort(key=lambda x: os.path.getmtime(x))  # sortiere die Dateipfade nach deren letztem Bearbeitungsdatum
 
-    #Öffne Messdaten aus Dropbox die noch nicht in der Datenbank sind...
-    log.info('Lade neue Datensätze aus Dropbox.')
-    dropbox_files = {}
-    dropbox_df = {}
-    notification = {}
-    offline = {}
-    database = {}
-    for bui in buid_long:
-        log.info(f'{bui}: Öffne vorhandene Datenbank.')
-        try:
-            database[bui] = pd.read_csv(db[bui], parse_dates=['Datetime'], dayfirst=True, index_col='Datetime')
-        except:
-            if bui == 'PM':
-                database[bui] = database['LB'].filter(like='DA')
-                database[bui].columns = ['Global W/m^2','Direct W/m^2','Diffuse W/m^2']
-        if database[bui].index.is_unique == False:
-            log.warning(f'{bui}: Achtung! Datensatz enthält Duplikate.')
-            try:
-                database[bui] = database[bui][~database[bui].index.duplicated(keep='first')]
-                if database[bui].indes.is_unique:
-                    log.warning(f'{bui}: Datenbank bereinigt!')
-                else:
-                    log.warning(f'{bui}: Datenbankfehler, überspringe Gebäude!')
-                    continue
-            except Exception as e:
-                log.warning(f'{bui}: Datenbankfehler {e}')
-                log.warning(f'{bui}: Überspringe Gebäude!')
+                last_day = pd.to_datetime(os.path.basename(dropbox_files[bui][-1]).rsplit('_',1)[0],format='%Y_%m_%d')  # Extrahiere das Datum der neusten Datei im DropBox-Ordner aus deren Dateiname
+                last_day_soll = dt.datetime.today().date()-dt.timedelta(1)                                              # Konstruiere das Soll-Datum, sprich gestern
 
-        cols_db = len(database[bui].columns)
-        dropbox_path = os.path.join(dropbox, bui)
-        dropbox_files[bui] = [os.path.join(dropbox_path, fn) for fn in os.listdir(dropbox_path) if fn.endswith(f'{bui}.csv') ]
-        dropbox_files[bui].sort(key=lambda x: os.path.getmtime(x))
+                if last_day.date() == dt.date.today():                                                                  # Vergleiche das Datum der neusten Datei mit dem Datum von Heute
+                    last_file = dropbox_files[bui].pop(-1)                                                              # Überspriche die Datei von Heute, da so noch fortgeschrieben wird.
+                    log.info(f'{bui}: Datei von Heute ({os.path.basename(last_file)}) wird übersprungen!')
+                if last_day.date() < last_day_soll:                                                                     # Wenn die neuste Datei mehr als einen tag zurück liegt funktioniert der Dropbox Abgleich nicht.
+                    offline[bui] = f'{buid[bui]} liefert seit {last_day.to_pydatetime().strftime("%d.%m.%Y")} ({((dt.datetime.today()-last_day.to_pydatetime()).days)} Tage(n)) keine neuen Daten mehr.'   # Erstelle eine Benachrichtigung
+                    log.info(offline[bui])
 
-        last_day = pd.to_datetime(os.path.basename(dropbox_files[bui][-1]).rsplit('_',1)[0],format='%Y_%m_%d')
-        last_day_soll = dt.datetime.today().date()-dt.timedelta(1)
+                log.info(f'{bui}: Durchsuche Dropbox nach neuen Datensätzen.')
 
-        if last_day.date() == dt.date.today():
-            last_file = dropbox_files[bui].pop(-1)
-            log.info(f'{bui}: Datei von Heute ({os.path.basename(last_file)}) wird übersprungen!')
-        if last_day.date() < last_day_soll:
-            offline[bui] = f'{buid_long[bui]} liefert seit {last_day.to_pydatetime().strftime("%d.%m.%Y")} ({((dt.datetime.today()-last_day.to_pydatetime()).days)} Tage(n)) keine neuen Daten mehr.'
-            log.info(offline[bui])
-
-        log.info(f'{bui}: Durchsuche Dropbox nach neuen Datensätzen.')
-        
-        df1 = []
-        n_files = len(dropbox_files[bui])
-        for n, file in enumerate(dropbox_files[bui]):
-            ut.running_bar(n,n_files)
-            try:
-                test = pd.read_csv(
-                        file,
-                        encoding= 'unicode_escape',
-                        engine='python',
-                        sep=';',
-                        nrows=1,
-                        na_values=['-','#N/V','#NV'],
-                        decimal=',')
-                test.reset_index(drop=True)
-                test.dropna(axis=1, how='all',inplace=True)
-                test.drop(list(test.filter(like='named').columns), axis=1, inplace=True)
-                test.drop_duplicates(ignore_index=True, inplace=True)
-
-                drop=[]
-                for c, col in enumerate(test.columns):
-                    if col == 'Date' or col == 'Datum':
-                        d=c
-                        date=col
-                        drop.append(col)
-                    if col == 'Time' or col =='Uhrzeit':
-                        t=c
-                        time=col
-                        drop.append(col)
-                test.insert(0,'Datetime',pd.to_datetime(test[date] +' '+ test[time],dayfirst=True))
-                test.drop(drop,axis=1,inplace=True)
-                test.set_index('Datetime',inplace=True)
-                test.sort_index(axis=0, inplace=True)
-
-                test.columns = test.columns.str.replace('HM', 'MH')
+                df1 = []                                                                # Definiere eine Liste in der die gefundenen neuen Datensätze gespeichert werden.
+                n_files = len(dropbox_files[bui])                                       # Zähle alle gefundenen Datensätze (Für die Fortschrittsanzeige während des Ladens)
+                for n, file in enumerate(dropbox_files[bui]):                           # Iteration über alle Dateien in der Dropbox
+                    ut.running_bar(n,n_files)                                           # Plotte die Fortschrittsanzeige
+                    try:                                                                # Fange Exceptions ein und überspringe damit fehlerhafte Dateien
+                        test = load_tf_file(file, nrows=1)                              # Lade die erste Zeile jedes Sheets
+                        if test.index.isin(master_df[bui].index) == False:              # Prüfe ob diese Zeile bereits in der bestehenden Datenbank vorhanden ist.
+                            newdate = pd.to_datetime(test.index.values.min()).date()    # Wenn es sich um eine neue Zeile handelt, extrahiere das Datum von dem die Aufzeichnungen stammen
+                            log.info(f'--- {newdate}: Neue Datei gefunden!')            # Plotte eine kurze Info
+                            newday = load_tf_file(file)                                 # Lade den kompletten Sheet
+                            for sensor, data in newday.iteritems():                     # Für den neuen Sheet: Gehe Spalte für Spalte durch und zähle die Fehlerhaften Beobachtungen
+                                check = data.isna().sum()/len(data.index)               # Berechne den Anteil der fehlenden Messpunkte
+                                if check > 0.1:                                         # Wenn mehr als 10% Datenpunkte fehlen sollten
+                                    if bui not in notification:                         # Erstelle eine Benachrichtigung...
+                                        notification[bui] = {}
+                                    if sensor in notification[bui]:
+                                        notification[bui][sensor][newdate] = int((1-check)*100)     # Dazu: Berechne den Anteil an fehlenden Punkten und speichere ihn in einem Dict
+                                    else:
+                                        notification[bui][sensor] = {newdate : int((1-check)*100)}
+                            df1.append(newday)
+                    except Exception as e:                                              # Speichere die Exception im log....
+                        log.warning(e)
+                if len(df1) > 0:
+                    export_databases = True
+                    master_df[bui] = pd.concat([master_df[bui]] + df1,axis=0)               # Nachdem alle Datensheets überprüft wurden, hänge die neuen Datensätze der Datenbank an
+                    master_df[bui].to_csv(db[bui], index=True)                              # exportiere die aktualisierte (Roh-)Datenbank
                 
-                if test.index.isin(database[bui].index) == False:
-                    newdate = pd.to_datetime(test.index.values.min()).date()
-                    log.info(f'--- {newdate}: Neue Datei gefunden!')
-                    newday = load_tf_file(file)
+            elif not os.path.isfile(db[bui]) or bui in OverwriteDatabase:               # Falls die Bedingung vom Eingang nicht zutrifft, sprich: Entweder wurde keine Datenbank gefunden oder die Datenbank SOLL überschrieben werden
+                log.info(f'{bui}: Keine Datenbank gefunden - erstelle neue aus dem Archiv.')
+                bui_path = os.path.join(tf_archive, bui)                                # Konstruiere den Pfad zum Ordner der entsprechenden Einheit im Archiv-Ordner
+                if os.path.exists(bui_path):                                            # Wenn der Archivordner existiert (...tut er z.B. für das Pyranometer nicht...)
+                    files[bui] = [os.path.join(bui_path, fn) for fn in os.listdir(bui_path) if fn.endswith('.csv')]    # Speichere die Dateipfade zu den Datensätzen im einem Dict ab.
+                else:
+                    files[bui] = []                                                     # Wenn das Archiv nicht existiert erstelle wenigstens eine leere Liste
+                files[bui].extend([os.path.join(tf_drop_bui, fn) for fn in os.listdir(tf_drop_bui) if fn.endswith(f'{bui}.csv')])   # Nun gehe in den Dropbox Ordner und hänge alle Datensheets der Liste an. Achtung: nur Dateien die auf {bui}.csv enden werden berücksichtigt. Damit werden die "Test" Dateien in der Dropbox direkt aussortiert
+                files[bui].sort(key=lambda x: os.path.getmtime(x))                      # Sortiere alle Datasheets nach dem Datum.
+                # files[bui].pop(-1)                                                      # Zum testen: entferne den neusten Datensatz... Kann deaktiviert werden
+                n_files = len(files[bui])                                               # Zähle die Sheets (Für die Fortschrittsanzeige)
+                dfs = []                                                                # Erstelle eine Leere Liste in die die Datensheets abgespeichert werden
+                for nf, file in enumerate(files[bui]):                                  # Gehe alle Datensheets durch
+                    try:                                                                # Fange FileNotFound Exceptions ein um nicht jedes mal von neuem anfangen zu müssen, falls eine Datei nicht gefunden wurden....
+                        df = load_tf_file(file)                                         # Öffne den Datensheet
+                        if isinstance(df, pd.DataFrame):                                # Die Funktion load_tf_file() gibt None zurück, wenn die Datei z.B. Leer ist. Nur wenn ein pd.DataFrame geladen wurde, soll dieser der Liste hinzugefügt werden
+                            dfs.append(df)
+                    except FileNotFoundError:
+                        print(f'{file} wurde nicht geladen.')
+                    ut.running_bar(nf,n_files)                                          # Fortschrittsanzeige
 
-                    for sensor in newday:
-                        check = newday[sensor].isna().sum()/len(newday.index)
-                        if check > 0.1:
-                            if bui not in notification:
-                                notification[bui] = {}
-                            if sensor in notification[bui]:
-                                notification[bui][sensor][newdate] = int((1-check)*100)
-                            else:
-                                notification[bui][sensor] = {newdate : int((1-check)*100)}
-                    df1.append(newday)
-            except Exception as e:
-                log.warning(e)
-        try:        
-            dropbox_df[bui] = pd.concat(df1)
-            if dropbox_df[bui].index.has_duplicates:
-                log.warning(f'{bui}: Datenbank enthält Duplikate!')
-                dropbox_df[bui] = dropbox_df[bui][~dropbox_df[bui].index.duplicated(keep='first')]
-                log.warning(f'{bui}: Duplikate bereinigt.')
-            if len(dropbox_df[bui].filter(like='.1').columns) >0:
-                for col in dropbox_df[bui].filter(like='.1'):
-                    log.warning(f'Achtung: {col} wurde dupliziert statt ergänzt...')
-            log.info(f'{bui}: Speichere neue Datensätze in Dictionary und fahre fort...')
-        except:
-            log.info(f'{bui}: Keine neue Datei(en) gefunden.')
-            continue
+                df = pd.concat(dfs)                                                     # Vereine alle Datensheets zu einem großen
+                log.info(f'{bui}: Lesen der Datensätze erfolgreich. Exportiere die Datenbank.')
+                if bui == 'LB':                                                         # In der LB-Datei waren am Anfang auch die Pyranometer-Daten. Diese müssen extrahiert werden.
+                    master_df['PM'] = df.filter(like='DA').copy()                       # Dazu wird im master_df-dict eine Kopie der Pyranometer-Daten gespeichert 
+                    master_df['PM'].columns = [col.rsplit('_',1)[-1] for col in master_df['PM'].columns]    # Deren Spaltenbezeichnugn wird noch vereinheitlicht
+                    master_df[bui] = df.drop(df.filter(like='DA').columns,axis=1).copy()    # Am Ende werden die Einträge der Pyranometer noch aus dem Bauweisen-dict gelöscht
+                elif bui == 'PM':                                                       # Für das Pyranometer wird das ganze jetzt andersrum gemacht. Erst werden die aus den LB-Daten extrahierten Datensätze geöffnet und die neuen Datensätze aus der Dropbox werden hinzugefügt.
+                    if bui in master_df and isinstance(master_df[bui], pd.DataFrame):   # Prüfe ob Daten aus dem Import eines LB-Sheets vorhanden sind.
+                        master_df[bui] = pd.concat([master_df[bui],df], axis = 0)       # Wenn dem so ist, dann füge Vereine sie mit dem neuen Datensatz
+                    else:
+                        master_df[bui] = df                                             # Wenn nicht, dann lade einfach nur den neuen Datensatz
+                else:
+                    master_df[bui] = df.copy()                                          # für alle anderen Datensätze: Speichere die neu geladenen Datensätze in dem master_df-dict
+                
+                master_df[bui].to_csv(db[bui], index=True)                              # und exportiere die Rohdaten als csv Datei
+                log.info(f'{bui}: Export der Datenbank erfolgreich.')
+                export_databases = True
+            if export_databases:                                                        # Hier beginnt das PostProcessing
+                master_df[bui].index = pd.to_datetime(master_df[bui].index)                 # Forme zuerst alle Indizes in das Datetime Format um.
+                if not master_df[bui].index.max().date() == dt.date.today():                # Nun Prüfe ob alle Datenbanken Aktuell sind, wenn nicht
+                    log.warning(f'{bui}: Datenbank ist nicht aktuell. Vermutlich funktioniert der Dropbox-abgleich aktuell nicht.')
+                for name, data in master_df[bui].iteritems():                               # Nun forme alle numerischen Daten in Float-Werte um
+                    master_df[bui][name] = pd.to_numeric(data, errors='ignore')
+                if not master_df[bui].columns.is_unique:                                    # Warne wenn duplizierte Spalten vorhanden sind
+                    log.warning(f'{bui}: Duplizierte Spalten!')
+                start, ende = master_df[bui].index.min(), master_df[bui].index.max()        # Extrahiere das Start und Enddatum des gesamten Datensatzes                             
+                log.info(f'{bui}: Starte Export für den Datenzeitraum: {start} bis {ende}.')
+                allgood = True                                                              # Prüfwert, dass alle Datensätze korrekt exportiert wurden
+                for ts in ['1min', '15min', '60min']:                                       # Definiere die Zeitschritte für den Export
+                    if os.path.isdir(os.path.join(dir_db,bui)) == False:                    # Falls der Export-Ordner nicht existieren sollte, erstelle ihn
+                        os.makedirs(os.path.join(dir_db,bui))
+                    
+                    df_resampled = master_df[bui].resample(ts).last().asfreq(ts)            # Führe Resampling auf den gewünschten Zeitschritt durch.
+                    if df_resampled.index.is_unique:                                        # Wenn der Index jetzt keine Fehler mehr enthält, exportiere den Datensatz
+                        df_resampled.to_csv(os.path.join(dir_db,bui,'{}_tf_database_resampled_{}.csv'.format(bui, ts)))
+                        log.debug(f'{bui}: Resampled auf {ts}')
+                    else:
+                        log.warning(f'{bui}: Resampling auf {ts} hat nicht geklappt! Es wurde nichts exportiert...')    # Falls Fehler enthalten sind, Schreibe eine Warnung ins Log 
+                        allgood = False                                                     # Setze den Prüfwert auf Falsch
+                if allgood:                                                                 # Wenn alle exporte Geklappt haben, schreibe das ins log. 0
+                    log.info(f'{bui}: Datenbanken exportiert!')
 
     # send missing data report
-    for bui in list(notification):
+    for bui in list(notification):                                                      # Räume die Notifications auf.
         for key in list(notification[bui]):
-            if 'named' in key:
+            if 'named' in key:                                                          # Es kann passieren, dass die "leeren"-Spalten hier landen, die müssen erst aussortiert werden
                 notification[bui].pop(key)
                 log.warning(f'{bui}: unnamed column in data.')
 
-    if len(offline) == 0 and len(notification) == 0:
+    if len(offline) == 0 and len(notification) == 0:                                    # Wenn nichts offline ist und alle Sensoren mehr als 90% Daten aufgezeichnet haben passt alles. Schreibe das ins Log und beende das Programm
         log.info('Keine neuen Datensätze oder alles läuft einwandfrei...')
-    else:
+    else:                                                                               # Wenn das nicht der Fall ist erstelle eine Benachrichtigungs-Mail
+                                                                                        # Beginne mit dem Einleitungstext der eMail    
         text = 'Hallo,\ndie folgenden Sensoren haben in den vergangenen Tagen ungewöhnlich wenige Daten aufgezeichnet:\n\nHinweis:\nDie Liste führt Tage auf, an denen ein Sensor weniger als 90% der Datensätze aufgezeichnet hat. Fehlende Tage in der Aufzählung bedeuten, dass an diesen Tagen mehr als 90% der Daten aufgezeichnet wurden\n'
 
+                                                                                        # Wenn alle Häuser "Online" sind - Sprich wir von allen Häusern aktuelle Datensheets haben, Schreibe das in die Mail
         if len(offline)==0:
             text += '\n\n---------ALLE HÄUSER ONLINE - DROPBOX-SYNC FUNKTIONIERT---------\n\n'
-
-        for bui in buid_long:
+                                        
+        for bui in buid:                                                                # Liste Haus für Haus, Tag für Tag die Fehlermeldungen auf
             if bui in offline or bui in notification:
-                text +='\n------'+ buid_long[bui] + ':------\n'
+                text +='\n------'+ buid[bui] + ':------\n'
             if bui in offline:
                 text += '\n!!! ' + offline[bui] + ' !!!\n'
             if bui in notification:
                 for sensor in notification[bui]:
                     text += '\n' + sensor + ':\n'
                     for day in notification[bui][sensor]:
-                        text += '\t{}: {}% Messwerte vorhanden.\n'.format(day, notification[bui][sensor][day])
-            if send==False:
+                        text += '\t{}: {}% Messwerte vorhanden.\n'.format(day, notification[bui][sensor][day])                                                                        
+            if send==False:                                                             # Wenn keine Mail versendet werden soll, schreibe die Infos ins Logbuch
                 log.debug(text)
-
-        if len(notification) > 0 and send==True:
-            try:
+                                                                                        
+        if len(notification) > 0 and send==True:                                        # Wenn Benachrichtigungen da sind und sie auch versendet werden sollen, bereite die Mail vor
+                                                                                        
+            try:                                                                        # Der Versand der eMails erfolgt über eine vorgefertigte Funktion unter src.utilities. Darüber hinaus wird die config.py mit den Zugangsdaten zum eMail Provider benötigt.
                 ut.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
                 log.info(f'Sensordaten-Übersicht gesendet')
+                                                # Schreibe was ins logbuch, wenn es nicht funktioniert hat
             except Exception as e:
                 log.warning(f'Senden der Nachricht fehlgeschlagen: {e}')
 
-    # send offline notification            
+    # Versnde eine Extra Mail, wenn Häuser offline sind.            
     if len(offline) == 0:
         log.info('Keine neuen Datensätze oder alles läuft einwandfrei...')
     else:
@@ -425,88 +425,7 @@ def tinkerforge(send=True, OverwriteDatabase=False):
             except Exception as e:
                 log.warning(f'Senden der Nachricht fehlgeschlagen: {e}')
 
-    # Füge neue Daten der Datenbank hinzu und speichere die aktualisierte Datenbank ab.
-    log.info('4_ Speichere aktualisierte Datenbank...')
-    if len(dropbox_df)==0:
-        log.info('Keine neuen Datensätze...')
-    else:
-        for bui in dropbox_df:
-            log.info(f'{bui}: Überprüfe neue Datensätze aus Dropbox...')
-            if dropbox_df[bui].index.has_duplicates:
-                log.warning(f'{bui}: Index enthält Duplikate!')
-                try:
-                    dropbox_df[bui] = dropbox_df[bui][~dropbox_df[bui].index.duplicated(keep='first')]
-                    log.info(f'{bui}: Duplikate erfolgreich bereinigt!')
-                except Exception as e:
-                    log.info(f'{bui}: Leider stimmt immer noch was nicht')
-                    log.warning(f'{bui}: {e}')
-                    log.info(f'{bui}: Überspringe Datensatz')
-                    continue
-                finally: 
-                    if dropbox_df[bui].index.is_unique:
-                        log.info(f'{bui}: Duplikate bereinigt. Datenbank in Ordnung.')
-
-            log.info(f'{bui}: Füge neue Einträge zur Datenbank hinzu.')
-
-            df = pd.concat([database[bui], dropbox_df[bui]])
-            df.dropna(axis=1, how='all', inplace=True)
-            df.sort_index(axis=0, inplace=True)
-
-            sensors = []
-
-            for col in df.columns:
-                sensor = col
-                for i, name in enumerate(sensor.split(' ')):
-                    # Unerwünschte Strings vom Anfang der Sensorbezeichnung abschneiden (z.B. [Black Globe], o.ä.)
-                    if name.startswith(bui):
-                        sensor = ' '.join(sensor.split(' ')[i:])
-                sensors.append(sensor)
-            df.columns = sensors
-
-            raw_sensor_id = df.columns.str.split(' ',expand=True).get_level_values(level=0)
-
-            for col in df.columns[raw_sensor_id.duplicated()]:
-                dupes = df.filter(like=col.split(' ')[0]).columns.tolist()
-                for dupe in dupes:
-                    if dupe == col:
-                        dupes.remove(dupe)
-                for dupe in dupes:
-                    df[col].fillna(df[dupe])
-                    df.drop(dupe,axis=1,inplace=True)
-
-            if df.index.is_unique == False:
-                    log.warning(f'{bui}: Index hat Duplikate.')
-                    log.info(f'{bui}: Versuche doppelte Einträge zu löschen...')
-                    df = df[~df.index.duplicated(keep='first')]
-                    if df.index.is_unique:
-                        log.info(f'{bui}: Erfolgreich bereinigt!')
-                    else:
-                        log.info(f'{bui}: Index Fehler!')
-                        continue
-            if len(df.filter(like='.1').columns)>0:
-                for col in df.filter(like='.1').columns:
-                    log.info(f'Spalte: {col} wurde dupliziert.')
-            else:
-                log.info(f'{bui}: Super! Keine doppelten Einträge mehr in der Datenbank. Starte Datenbankexport...')
-
-            
-            database[bui] = df
-
-            anfang = database[bui].index.min()
-            ende = database[bui].index.max()
-
-            database[bui].to_csv(db[bui])
-            log.info(f'{bui}: Aktueller Datenzeitraum: {anfang} bis {ende}.')
-            for ts in ['1min', '15min', '60min']:
-                if os.path.isdir(os.path.join(db_loc,bui)) == False:
-                    os.makedirs(os.path.join(db_loc,bui))
-                
-                df_resampled = database[bui].resample(ts).last().asfreq(ts)
-                
-                df_resampled.to_csv(os.path.join(db_loc,bui,'{}_tf_database_resampled_{}.csv'.format(bui, ts)))
-                log.debug(f'{bui}: Resampled auf {ts}')
-            log.info(f'{bui}: Datenbanken exportiert!')
-    log.info('TinkerForge: FINISHED')
+    log.info('TinkerForge: FINISHED')                                           # Schreibe ins Log, dass das Skript druchgelaufen ist. !Achtung: Nach diesem Eintrag wird entschieden, ob ein Datenbank update notwendig ist oder nicht. Wenn dieser Eintrag mit heutigem Datum im Log steht, wird die DAtenbank nicht aktualisiert, wenn das nicht der Fall ist, wird ein Update angestoßen.
 
 logpath = './logs'
 onlyfiles = [os.path.join(logpath, f) for f in os.listdir(logpath) if os.path.isfile(os.path.join(logpath, f))]
@@ -524,10 +443,10 @@ for logfile in onlyfiles:
 if Stand_TinkerForge.date() == dt.date.today():
     print('Tinkerforge up-to-date')
 else:
-    tinkerforge()
+    tinkerforge_update()
 
 if Stand_EnergyMeter.date() == dt.date.today():
     print('EnergyMeter up-to-date')
 else:
-    energymeter()
+    energymeter_update()
     print('EnergyMeter Nessesarry')
