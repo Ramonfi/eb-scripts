@@ -108,14 +108,14 @@
 ## ***************************************************************************
 ## See https://matplotlib.org/api/artist_api.html#module-matplotlib.lines
 ## for more information on line properties.
-#lines.linewidth: 1.5               # line width in points
+lines.linewidth: .5               # line width in points
 #lines.linestyle: -                 # solid line
 #lines.color:     C0                # has no affect on plot(); see axes.prop_cycle
 #lines.marker:          None        # the default marker
 #lines.markerfacecolor: auto        # the default marker face color
 #lines.markeredgecolor: auto        # the default marker edge color
 #lines.markeredgewidth: 1.0         # the line width around the marker symbol
-#lines.markersize:      6           # marker size, in points
+lines.markersize:      .8           # marker size, in points
 #lines.dash_joinstyle:  round       # {miter, round, bevel}
 #lines.dash_capstyle:   butt        # {butt, round, projecting}
 #lines.solid_joinstyle: round       # {miter, round, bevel}
@@ -254,12 +254,12 @@
 ## relative to font.size, using the following values: xx-small, x-small,
 ## small, medium, large, x-large, xx-large, larger, or smaller
 
-#font.family:  sans-serif
+font.family:  Arial
 #font.style:   normal
 #font.variant: normal
 #font.weight:  normal
 #font.stretch: normal
-#font.size:    10.0
+font.size:    10.0
 
 #font.serif:      DejaVu Serif, Bitstream Vera Serif, Computer Modern Roman, New Century Schoolbook, Century Schoolbook L, Utopia, ITC Bookman, Bookman, Nimbus Roman No9 L, Times New Roman, Times, Palatino, Charter, serif
 #font.sans-serif: DejaVu Sans, Bitstream Vera Sans, Computer Modern Sans Serif, Lucida Grande, Verdana, Geneva, Lucid, Arial, Helvetica, Avant Garde, sans-serif
@@ -361,14 +361,14 @@
 #axes.grid:          False   # display grid or not
 #axes.grid.axis:     both    # which axis the grid should apply to
 #axes.grid.which:    major   # grid lines at {major, minor, both} ticks
-#axes.titlelocation: center  # alignment of the title: {left, right, center}
-#axes.titlesize:     large   # font size of the axes title
-#axes.titleweight:   normal  # font weight of title
+axes.titlelocation: left  # alignment of the title: {left, right, center}
+axes.titlesize:     medium   # font size of the axes title
+axes.titleweight:   bold  # font weight of title
 #axes.titlecolor:    auto    # color of the axes title, auto falls back to
                              # text.color as default value
 #axes.titley:        None    # position title (axes relative units).  None implies auto
 #axes.titlepad:      6.0     # pad between axes and title in points
-#axes.labelsize:     medium  # font size of the x and y labels
+axes.labelsize:     small  # font size of the x and y labels
 #axes.labelpad:      4.0     # space between label and axis
 #axes.labelweight:   normal  # weight of the x and y labels
 #axes.labelcolor:    black
@@ -397,10 +397,10 @@
                                      # at least this number of significant
                                      # digits from tick labels.
 
-#axes.spines.left:   True  # display axis spines
+#axes.spines.left:   False  # display axis spines
 #axes.spines.bottom: True
-#axes.spines.top:    True
-#axes.spines.right:  True
+#axes.spines.top:    False
+#axes.spines.right:  False
 
 #axes.unicode_minus: True  # use Unicode for the minus symbol rather than hyphen.  See
                            # https://en.wikipedia.org/wiki/Plus_and_minus_signs#Character_codes
@@ -472,7 +472,7 @@
 #xtick.minor.pad:     3.4     # distance to the minor tick label in points
 #xtick.color:         black   # color of the ticks
 #xtick.labelcolor:    inherit # color of the tick labels or inherit from xtick.color
-#xtick.labelsize:     medium  # font size of the tick labels
+xtick.labelsize:     small  # font size of the tick labels
 #xtick.direction:     out     # direction: {in, out, inout}
 #xtick.minor.visible: False   # visibility of minor ticks on x-axis
 #xtick.major.top:     True    # draw x axis top major ticks
@@ -482,9 +482,9 @@
 #xtick.alignment:     center  # alignment of xticks
 
 #ytick.left:          True    # draw ticks on the left side
-#ytick.right:         False   # draw ticks on the right side
+#ytick.right:         True   # draw ticks on the right side
 #ytick.labelleft:     True    # draw tick labels on the left side
-#ytick.labelright:    False   # draw tick labels on the right side
+#ytick.labelright:    True   # draw tick labels on the right side
 #ytick.major.size:    3.5     # major tick size in points
 #ytick.minor.size:    2       # minor tick size in points
 #ytick.major.width:   0.8     # major tick width in points
@@ -516,7 +516,7 @@
 ## * LEGEND                                                                  *
 ## ***************************************************************************
 #legend.loc:           best
-#legend.frameon:       True     # if True, draw the legend on a background patch
+legend.frameon:       True     # if True, draw the legend on a background patch
 #legend.framealpha:    0.8      # legend patch transparency
 #legend.facecolor:     inherit  # inherit from axes.facecolor; or color spec
 #legend.edgecolor:     0.8      # background patch boundary color
@@ -526,7 +526,7 @@
 #legend.numpoints:     1        # the number of marker points in the legend line
 #legend.scatterpoints: 1        # number of scatter points
 #legend.markerscale:   1.0      # the relative size of legend markers vs. original
-#legend.fontsize:      medium
+legend.fontsize:      small
 #legend.labelcolor:    None
 #legend.title_fontsize: None    # None sets to the same as the default axes.
 

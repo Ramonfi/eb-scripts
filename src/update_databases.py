@@ -351,7 +351,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[]):
                 if not master_df[bui].columns.is_unique:                                    # Warne wenn duplizierte Spalten vorhanden sind
                     log.warning(f'{bui}: Duplizierte Spalten!')
                 start, ende = master_df[bui].index.min(), master_df[bui].index.max()        # Extrahiere das Start und Enddatum des gesamten Datensatzes                             
-                log.info(f'{bui}: Starte Export für den Datenzeitraum: {start} bis {ende}.')
+                log.info(f'{bui}: Starte Export!')
                 allgood = True                                                              # Prüfwert, dass alle Datensätze korrekt exportiert wurden
                 for ts in ['1min', '15min', '60min']:                                       # Definiere die Zeitschritte für den Export
                     if os.path.isdir(os.path.join(dir_db,bui)) == False:                    # Falls der Export-Ordner nicht existieren sollte, erstelle ihn
@@ -365,7 +365,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[]):
                         log.warning(f'{bui}: Resampling auf {ts} hat nicht geklappt! Es wurde nichts exportiert...')    # Falls Fehler enthalten sind, Schreibe eine Warnung ins Log 
                         allgood = False                                                     # Setze den Prüfwert auf Falsch
                 if allgood:                                                                 # Wenn alle exporte Geklappt haben, schreibe das ins log. 0
-                    log.info(f'{bui}: Datenbanken exportiert!')
+                    log.info(f'{bui}: TinkerForge Datenbanken exportiert! | {start} | {ende} |')
 
     # send missing data report
     for bui in list(notification):                                                      # Räume die Notifications auf.
