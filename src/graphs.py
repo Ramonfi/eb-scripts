@@ -73,7 +73,8 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='op',ms=None,legend_ms=None):
         ax.text(
             -13,
             28, 
-            text1.strip(),      
+            text1.strip(), 
+            fontsize='small',     
             style='normal', 
             ha = 'left', 
             va = 'top',
@@ -85,7 +86,8 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='op',ms=None,legend_ms=None):
         ax.text(
             40,
             16, 
-            text2.strip(),      
+            text2.strip(), 
+            fontsize='small',     
             style='normal', 
             ha = 'right', 
             va = 'bottom',
@@ -193,6 +195,7 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
                 f'KAT {key}',
                 xy=(min(x1), 
                 min(y1)), 
+                fontsize='small',
                 xycoords='data',
                 xytext=(-5, 0), 
                 textcoords='offset points',
@@ -204,6 +207,7 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
                 f'KAT {key}',
                 xy=(min(x2), 
                 min(y2)), 
+                fontsize='small',
                 xycoords='data',
                 xytext=(-5, 0), 
                 textcoords='offset points',
@@ -241,7 +245,8 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
                 ax.text(
                     9,
                     31, 
-                    text1.strip(),      
+                    text1.strip(), 
+                    fontsize='small',     
                     style='normal', 
                     ha = 'left', 
                     va = 'top',
@@ -256,7 +261,8 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
                 ax.text(
                     30,
                     17, 
-                    text2.strip(),      
+                    text2.strip(),  
+                    fontsize='small',    
                     style='normal', 
                     ha = 'right', 
                     va = 'bottom',
@@ -280,16 +286,6 @@ def thermal_comfort_2(TAMBG24, TROOM, ax, mode='air',ms=None,legend_ms=None):
     if mode=='op':
         ax.set_ylabel('operative Raumtemperatur\n[°C]')
 
-    # ax.text(
-    #     0.025,
-    #     1.15, 
-    #     'Adaptives Komfortmodell nach DIN EN 16798-1, B2.2',      
-    #     fontweight = 'bold',
-    #     fontsize = 8, 
-    #     ha = 'left', 
-    #     va = 'top',
-    #     transform=ax.transAxes,
-    #     )
     ax.set_title('Adaptives Komfortmodell nach DIN EN 16798-1 - Anhang B2.2',
        fontweight = 'bold',
        loc='left',
@@ -450,16 +446,6 @@ def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,l
     ax.xaxis.set_major_formatter('{x:.0f}')
     ax.yaxis.set_major_formatter('{x:.0f}')
 
-    # ax.text(
-    #     0.025,
-    #     1.15, 
-    #     'H,x - Diagramm',      
-    #     fontweight = 'bold',
-    #     fontsize = 8, 
-    #     ha = 'left', 
-    #     va = 'top',
-    #     transform=ax.transAxes,
-    #     )
     ax.set_title(
         'H,x - Diagramm',
         fontweight = 'bold',
