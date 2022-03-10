@@ -1,10 +1,36 @@
 import pandas as pd
 import numpy as np
+import os
+from src.project_definitions import BUID, dir_db
 
-import src.project_definitions as eb
+# Scanne das Projektverzeichnis nach den Datenbanken und speichere die Pfade ab.
+files ={}
+for meter in ['tf','em']:
+    if meter not in files:
+        files[meter] = {} 
+    for bui in ['LB','MW','MH','WD','PM']:
+        path = os.path.join(dir_db,bui)
+        if not os.path.isdir(path):
+            os.makedirs(path)
+        for fn in os.listdir(path):
+            names = fn.split('_')
+            if names[1] == meter:
+                if bui not in files[meter]:
+                    files[meter][bui] = {}
+                files[meter][bui][fn.rsplit('_',1)[-1].split('.')[0]] = os.path.join(os.path.join(path), fn)
 
-def load_tf_bui(bui, timestep='60min'):
-    path = eb.files['tf'][bui][timestep]
+
+def load_tf_bui(bui, timestep='60min',multiindex=True):
+    '''
+    Öffne die TinkerForge Messdatenbank als pd.DataFrame.
+
+    Args:
+    ----
+        bui: Bauweise ['LB', 'MW' oder 'MH']
+        timestep: '1min', '15min' oder '60min'
+        multiindex: Return DataFrame with Multiindex vereinfacht das Durchsuchen und filtern. (default = True)
+    '''
+    path = files['tf'][bui][timestep]
     df = pd.read_csv(
             path, 
             decimal='.', 
@@ -12,66 +38,68 @@ def load_tf_bui(bui, timestep='60min'):
             parse_dates = ['Datetime'],
             infer_datetime_format=True,
             index_col='Datetime',
-            dayfirst=True
+            dayfirst=True,
+            low_memory=False
             )
 
     df.replace([' ','  '],np.NAN,inplace=True)
-    idx = []
-    
-    for col in df.columns:
-        sensor = ' '.join(col.split(' '))
-        # Für alle Sensorbezeichnungen die jetzt mit der Gebäude ID Anfangen:
-        if sensor.startswith(bui):
-            # Entferne Gebäudebezeichnung...
-            sensor = sensor.split('_',2)[1:]
-            # Setze Stochwerksbezeichnung
-            loc = sensor[0]
-            sensor = sensor[1].split('_')
+    if multiindex:
+        idx = []
+        for col in df.columns:
+            sensor = ' '.join(col.split(' '))
+            # Für alle Sensorbezeichnungen die jetzt mit der Gebäude ID Anfangen:
+            if sensor.startswith(bui):
+                # Entferne Gebäudebezeichnung...
+                sensor = sensor.split('_',2)[1:]
+                # Setze Stochwerksbezeichnung
+                loc = sensor[0]
+                sensor = sensor[1].split('_')
 
-            if loc == 'Dach':
-                whg = 'DA'
-                room = ''
-                name = '_'.join(sensor)
+                if loc == 'Dach':
+                    whg = 'DA'
+                    room = ''
+                    name = '_'.join(sensor).strip()
 
-            elif len(sensor) < 4:
-                if len(sensor[0]) == 1:
+                elif len(sensor) < 4:
+                    if len(sensor[0]) == 1:
+                        whg = sensor[0]
+                        room = ''
+                        name = '_'.join(sensor[1:]).strip()
+                    else:
+                        whg = ''
+                        room = ''
+                        name = '_'.join(sensor).strip()
+
+                elif len(sensor) >= 4:
                     whg = sensor[0]
-                    room = ''
-                    name = '_'.join(sensor[1:])
-                else:
-                    whg = ''
-                    room = ''
-                    name = '_'.join(sensor)
+                    if whg in ['N', 'S', 'O']:
+                        room = sensor[1]
+                        name = '_'.join(sensor[2:]).strip()
+                    elif whg in ['TH']:
+                        room = ''
+                        name = '_'.join(sensor[1:]).strip()
 
-            elif len(sensor) >= 4:
-                whg = sensor[0]
-                if whg in ['N', 'S', 'O']:
-                    room = sensor[1]
-                    name = '_'.join(sensor[2:])
-                elif whg in ['TH']:
-                    room = ''
-                    name = '_'.join(sensor[1:])
-
-        else:
-            if sensor == '-->Extra-Sensors-->':
-                whg == ''
-                room == ''
-                name = ''
             else:
-                whg = 'DA'
-                room = ''
-                name = sensor.split('-')[1].split('_', 2)[2]
-        index = (whg,room,name)
-        idx.append(index)
-        
-    df.columns = pd.MultiIndex.from_tuples(idx)
+                if sensor == '-->Extra-Sensors-->':
+                    whg == ''
+                    room == ''
+                    name = ''
+                else:
+                    whg = 'DA'
+                    room = ''
+                    name = sensor.split('-')[1].split('_', 2)[2].strip()
+            index = (whg,room,name)
+            idx.append(index)
+        df.columns = pd.MultiIndex.from_tuples(idx)
+    else:
+        df.columns = df.columns.str.strip()
     df.sort_index(axis=1,inplace=True)
     return df
 
 ################################################ LOAD PYRANOMETER FILE ################################################
 
 def load_tf_pm(timestep='60min'):
-    path = eb.files['tf']['PM'][timestep]
+    path = files['tf']['PM'][timestep]
     df = pd.read_csv(
         path, 
         decimal='.', 
@@ -79,7 +107,8 @@ def load_tf_pm(timestep='60min'):
         parse_dates = ['Datetime'],
         infer_datetime_format=True,
         index_col='Datetime',
-        dayfirst=True
+        dayfirst=True,
+        low_memory=False
         )
     df['Direct W/m^2'][df['Direct W/m^2'] < 0] = 0
     df['Diffuse W/m^2'] = df['Global W/m^2'] - df['Direct W/m^2']
@@ -92,7 +121,7 @@ def load_tf_pm(timestep='60min'):
 ################################################ LOAD WEATHER FILE ################################################
 
 def load_tf_weather(timestep='60min'):
-    path = eb.files['tf']['WD'][timestep]
+    path = files['tf']['WD'][timestep]
     df = pd.read_csv(
         path, 
         decimal='.', 
@@ -100,7 +129,8 @@ def load_tf_weather(timestep='60min'):
         parse_dates = ['Datetime'],
         infer_datetime_format=True,
         index_col='Datetime',
-        dayfirst=True
+        dayfirst=True,
+        low_memory=False
         )
     df.columns = ['ID', 'T_amb', 'Rh_amb','windspeed','gustspeed','rain','winddir','btry']
     df.drop(['ID', 'btry'],axis = 1,inplace=True)
@@ -110,7 +140,7 @@ def load_tf_weather(timestep='60min'):
 ################################################ LOAD MOILNE FILEs ################################################
 
 def load_energy_data(bui, ts='1min'):
-    df = pd.read_csv(eb.files['em'][bui][ts], index_col = [0], header=[0,1,2])
+    df = pd.read_csv(files['em'][bui][ts], index_col = [0], header=[0,1,2],low_memory=False)
     df.index = pd.to_datetime(df.index)
     df.drop('TPID',axis=1,level=2,inplace=True)
     meters = {'HQ':'Energie','VW':'Volumen','H':'Heizung','W':'Wasser'}
@@ -118,7 +148,7 @@ def load_energy_data(bui, ts='1min'):
     for col in df.columns:
         t = '_'.join(col)
         try:
-            app = eb.wohnungen3[t.split('_')[0]]
+            app = {'2OG-Nord' : 'N','2OG-Ost':'O','2OG-Sued':'S'}[t.split('_')[0]]
         except:
             app = t
         meter = t.split('_')[-2]
@@ -131,3 +161,8 @@ def load_energy_data(bui, ts='1min'):
         df[col] = df[col]/1000 #kWh
 
     return df
+
+startdate = '2021-06-01'
+IND = pd.concat({bui: load_tf_bui(bui, '1min').loc[startdate:] for bui in BUID},axis=1)
+AMB = pd.merge(load_tf_weather('1min').loc[startdate:], load_tf_pm('1min').loc[startdate:], left_index=True, right_index=True)
+EM = pd.concat({bui: load_energy_data(bui) for bui in BUID}, axis=1)

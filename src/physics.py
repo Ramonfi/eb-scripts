@@ -36,7 +36,7 @@ def x_to_g(g, t):
     return g/roh(t)
 
 # absolute Luftfeuchtigkeit in g/kg von temperatur und luftfeuchte
-def g_abs(rh:float,t:float):
+def g_abs(t: float, rh: float):
     # atmosphärischer Luftdruck in Pa:
     p = 101325
     # Wasserdampfsättigungsdruck
@@ -63,3 +63,15 @@ def RH(g:float,t:float):
     #absoulte Feuchte in kg/kg
     g = g/1000
     return round( (g*p/(psat(t)*(0.622+g))*100), 1)
+
+def t_for_g(g, rh):
+    A = 23.1964
+    B = 3816.44
+    C = 273.15 - 46.13
+    pamb = 101325
+
+    blub = ((29*g)/18000)/(1+29*g/18000)
+
+    p_0 = blub*(100/rh)*pamb
+
+    return B/(A-m.log(p_0))-C

@@ -8,35 +8,18 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.colors as colors
 import numpy as np
-import urllib.parse
+from src.utilities import truncate_colormap
 from getpass import getpass
 import platform
 
 #########################################################  USER INPUTS  #############################################################################
-def mount_ls(server='nas.ads.mwn.de', share='/tuar/l15/private/DATA/FORSCHUNG/04_Projekte/2021/Einfach_Bauen_3/Daten/', local_mount=None):
-
-    print(f'\ntrying to mount \n\t{server}{share}\non\n\t{local_mount}\n')
-    user = input(f'Enter the username on {server}:\n')
-    password = getpass(f'Enter the password for user {user} on {server}:\n')
-    pw = urllib.parse.quote_plus(password)
-
-    os.system(f'mount_smbfs -o automounted -N "//{user}:{pw}@{server}{share}" "{local_mount}"')
-
-    if os.path.ismount(local_mount):
-        print(f'{local_mount}: successfully mounted.\n')
-
-def unmount_ls(local_mount=os.path.join(os.path.dirname(os.path.dirname(__file__)),'eb-remote')):
-    os.system(f'umount {local_mount}')
-    if os.path.ismount(local_mount) == False:
-        print(f'{local_mount}: successfully unmounted.\n')
-
-
 
 # Ein paar Namen und Kurzbezeichnungen
 ### Kurzbezeichnung Häuser
-buid = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton'}
+BUID = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton'}
+buid = {'MH': truncate_colormap('Greens_r',0, 0.6), 'MW': truncate_colormap('Oranges_r',0, 0.7), 'LB': truncate_colormap('Blues_r',0, 0.6)}
 ### Kurzbezeichnung Wohnungen (Messdaten)
-wohnungen = {'N':'Nord','S':'Süd','O':'Ost'}
+WOHNUNGEN = {'N':'Nord','S':'Süd','O':'Ost'}
 ### Kurzbezeichnung Wohnungen (Simulation)
 ori = {'WE1':'Nord','WE2':'Ost','WE3':'Süd'}
 ### Überzetzung Wohnungsbezeichnungen (Simulation in Messdaten)
@@ -44,7 +27,7 @@ wohnungen2 = {'WE1': 'N', 'WE3': 'S', 'WE2': 'O'}
 ### Übersetzung Wohungsbezeichnungen (Moline in Kurzbezeichnung Messdaten)
 wohnungen3 = {'2OG-Nord' : 'N','2OG-Ost':'O','2OG-Sued':'S'}
 ### Kurzbezeichnung Räume
-rooms = {'B':'Bad', 'F':'Flur', 'K':'Küche', 'SZ':'Schlafzimmer', 'WZ':'Wohnzimmer', 'SWK':'1-Zimmer-Appartment'}
+ROOMS = {'B':'Bad', 'F':'Flur', 'K':'Küche', 'SZ':'Schlafzimmer', 'WZ':'Wohnzimmer', 'SWK':'1-Zimmer-Appartment'}
 ### Kurzbezeichnungen Moiline Zähler
 meters = {'HQ':'Energie','VW':'Volumen','H':'Heizung','W':'Wasser'}
 ### Airnodes aus der Simulation
@@ -52,13 +35,14 @@ airnodes = ['A1_WE1_Wohnen','A2_WE1_Innenflur','A3_WE1_Diele','A4_WE1_Schlafen',
 
 # Datenbanken
 ### Lokaler Pfad in Projektverzeichnis
-dir_db = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','database')
+dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data')
+dir_db = os.path.join(dir,'database')
 ### Pfad auf Lehrstuhl-Laufwerk
 dir_db_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\2_datenbank'
 
 # Ordner für Auswertungn
 ### Lokaler Pfad in Projektverzeichnis
-dir_results = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data','Results')
+dir_results = os.path.join(dir,'Results')
 ### Pfad auf Lehrstuhl-Laufwerk
 dir_results_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\3_auswertung'
 
@@ -71,39 +55,6 @@ tf_path = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCH
 
 ## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
 tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
-
-if platform.system() == 'Darwin':
-    dir = os.path.dirname(os.path.dirname(__file__))
-    mount = os.path.join(dir,'eb-remote')
-
-    if not os.path.exists(mount):
-        os.makedirs(mount)
-
-    if os.path.ismount(mount) == False:
-        mount_ls(local_mount = mount)
-
-    if os.path.ismount(mount):
-        dir_db_ls = os.path.join(mount,'2_datenbank')
-        dir_results_ls = os.path.join(mount,'3_auswertung')
-        em_path = os.path.join(mount,'1_rohdaten','EM','RmCU')
-        tf_path = os.path.join(mount,'1_rohdaten')
-        tf_archive = os.path.join(mount,'ARCHIV','1_rohdaten')
-
-# Scanne das Projektverzeichnis nach den Datenbanken und speichere die Pfade ab.
-files ={}
-for meter in ['tf','em']:
-    if meter not in files:
-        files[meter] = {} 
-    for bui in list(buid.keys()) + ['WD','PM']:
-        path = os.path.join(dir_db,bui)
-        if not os.path.isdir(path):
-            os.makedirs(path)
-        for fn in os.listdir(path):
-            names = fn.split('_')
-            if names[1] == meter:
-                if bui not in files[meter]:
-                    files[meter][bui] = {}
-                files[meter][bui][fn.rsplit('_',1)[-1].split('.')[0]] = os.path.join(os.path.join(path), fn)
 
 # Erstelle eine Vorlage für die config-File die zum eMail Versand notwendig ist.
 config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.py')
@@ -143,3 +94,42 @@ for app in ['WE1','WE2','WE3']:
         area[wohnungen2[app]]['%']=(area[wohnungen2[app]]['array']/area[wohnungen2[app]]['sum'])
     except:
         continue
+
+AREA = (pd.DataFrame(A.groupby(level=0).sum()).T)[['WE1','WE2','WE3']]
+AREA.columns = ['N','O','S']
+
+
+TIR = {'LB': {
+    'm_tir3_obj (°C)':'Küchenzeile [WEST]',
+    'm_tir4_obj (°C)':'Außenwand [OST]',
+    'm_tir6_obj (°C)':'Nachbarwohnung [SÜD]',
+    'm_tir5_obj (°C)':'Treppenhaus [NORD]',
+    'm_tir2_obj (°C)':'Decke',
+    'm_tir1_obj (°C)':'Fußboden'
+    },'MW': {
+    'm_tir1_obj (°C)':'Küchenzeile [WEST]', 
+    'm_tir2_obj (°C)':'Außenwand [OST]',
+    'm_tir3_obj (°C)':'Nachbarwohnung [SÜD]',
+    'm_tir4_obj (°C)':'Treppenhaus [NORD]',
+    'm_tir5_obj (°C)':'Decke',
+    'm_tir6_obj (°C)':'Fußboden'
+    },'MH': {
+    'm_tir1_obj (°C)':'Küchenzeile [WEST]', 
+    'm_tir3_obj (°C)':'Außenwand [OST]',
+    'm_tir2_obj (°C)':'Nachbarwohnung [SÜD]',
+    'm_tir4_obj (°C)':'Treppenhaus [NORD]',
+    'm_tir5_obj (°C)':'Decke',
+    'm_tir6_obj (°C)':'Fußboden'
+    }
+}
+
+WANDFLÄCHEN = {
+    'Fußboden': 17.9,
+    'Decke':17.9,
+    'Küchenzeile [WEST]':7.5,
+    'Außenwand [OST]':10.5,
+    'Treppenhaus [NORD]':16.3,
+    'Nachbarwohnung [SÜD]':16.3
+    }
+
+KORREKTUR_RH = {'MH': 4.2,'MW': 13.5,'LB':5.3}

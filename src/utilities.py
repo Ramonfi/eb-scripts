@@ -2,6 +2,7 @@ import smtplib, ssl
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
 import os
 
 # ======== costum colormap ==========
@@ -87,3 +88,137 @@ def send_email(who,sender,subject,text,password,smtp):
         server.login(sender_email, password)
         server.sendmail(sender_email, receiver_email, message)
         print('Message sent!')
+
+# ======== set_ticks ==========
+def set_ticks(ax:plt.axes, min:float, max:float, step:float=None, axes:str='y') -> None:
+    '''
+    Passt die Grenzen und Schrittweite Achse an.
+
+    Args:
+    ---
+    ax: Plot auf den die Funktion angewendet werden soll
+    min: Untere Grenze der Achse.
+    max: Obere Grenze der Achse.
+    axes: Welche Achse soll angepasst werden? 'x' oder 'y' (default = 'y')
+    step: Manuelle Schrittweite. None bedeutet automatische Schrittweite (defaul: None).
+    '''
+    if axes == 'y':
+        ax.set_ylim(min,max)
+        if step:
+            ax.set_yticks(np.arange(min, max+step, step))
+    elif axes == 'x':
+        ax.set_xlim(min,max)
+        if step:
+            ax.set_xticks(np.arange(min, max+step, step))
+    else:
+        raise ValueError('Achse nicht korrekt angegeben. Bitte "x" für die x-Achse und "y" für die y-Achse übergeben')
+
+# ======== calcTOP ==========
+def calcTOP(Tair, Tsk, E:float=0.94, D:float=0.07):
+    '''
+    Berechne die operative Raumtemperatur aus der Luft- und der Schwarzkugeltemperatur
+
+    args:
+    -----
+        Tair:   Raumlufttemperatur  [°C]
+        Tsk:    Schwarzkugeltemperatur [°C]
+        E:      Emissionsfaktor der Schwarzkugel [-]
+        D:      Durchmesser der Schwarzkugel [m]
+
+    returns:
+    ----
+        Top:    operative Raumtemperatur [°C]
+    '''
+    if isinstance(Tair, pd.DataFrame):
+        Tair = Tair.max(axis=1)
+    if isinstance(Tsk, pd.DataFrame):
+        Tsk = Tsk.max(axis=1)
+        
+    ## MRT,sk
+    MRT_sk = (( ( (Tsk + 273)**4 ) + ( (0.25*10**8) / E ) * ( abs(Tsk - Tair) / D )**(1/4) * (Tsk - Tair) )**(1/4) - 273)
+
+    ## Top,sk
+    return ((MRT_sk + Tair) / 2)
+
+# ======== Kompass ==========
+KOMPASS = {'n': 'Nord', 'o':'Ost', 's': 'Süd', 'w': 'West'}
+
+# ======== DIN Formate ==========
+def cm(inch):return inch*2.54
+def inch(cm):return cm/2.54
+
+din_a4 = (inch(21), inch(29.7))
+din_a4_landscape = (inch(29.7), inch(21))
+
+din_a3 = (inch(29.7), inch(2*21))
+din_a3_landscape = (inch(2*21), inch(29.7))
+
+# ======== Vorlage BBOX f. Annotationen ==========
+eb_bbox = {
+            'boxstyle':'square',
+            'alpha':0.8,
+            "facecolor":"white", 
+            'edgecolor':'0.8', 
+            "pad":0.4
+            }
+
+# ======== Temperaturgradstunden DIN 16789 ==========
+def Temperaturgradstunden(Tamb_g24:pd.DataFrame=None, Top:pd.DataFrame=None, Kat:str=None, Ret:str='df'):
+    '''
+    Berechnet die Über- bzw. Untergradstunden bezogen auf das Komfortband nach DIN EN 16789-1, Anhang 2. 
+
+    Args:
+    ----------
+        Tambg_24:   Gleitender Mittelwert der Außenlufttemperatur. Übergabe als pd.Series oder pd.DataFrame mit DatetimeIndex.
+                    Wenn ein DataFrame übergeben wird, wird für die untere Grenze das Minimum und für die obere Grenze das Maximum je Zeitschritt betrachtet.
+
+        Top:        Operative Raumtemperatur. Übergabe als pd.Series oder pd.DataFrame mit DatetimeIndex
+                    Wenn ein DataFrame übergeben wird, wird für die untere Grenze das Minimum und für die obere Grenze das Maximum je Zeitschritt betrachtet.
+
+        Kat:        Kategorie nach DIN EN 16789-1 ['I', 'II' oder 'III] (default = all)
+
+        Ret:        'df' = DataFrame, 'dict' = Dict (default = DataFrame)
+
+    Returns:
+    ---
+        pd.DataFrame oder dict
+    
+    '''
+    KAT={'I':2,'II':3,'III':4}
+    if Kat:
+        for kat in Kat:
+            if kat in KAT:
+                KAT = {kat: KAT[kat]}
+
+    Tamb_g24 = Tamb_g24[Tamb_g24 > 10]
+
+    results = {'UTGS':{}, 'ÜTGS':{}}
+    for key, item in KAT.items():
+
+        if isinstance(Tamb_g24, pd.DataFrame):
+            TrefLower = (Tamb_g24.min(axis=1)/3) + 18.8 - item - 1
+            TrefUpper = (Tamb_g24.max(axis=1)/3) + 18.8 + item
+        elif isinstance(Tamb_g24, pd.Series):
+            TrefLower = (Tamb_g24/3) + 18.8 - item - 1
+            TrefUpper = (Tamb_g24/3) + 18.8 + item
+        else:
+            raise ValueError('Tamb_g24 muss entweder pd.DataFrame oder pd.Series sein.')
+        
+        if isinstance(Top, pd.DataFrame):
+            TopUpper = Top.max(axis=1)
+            TopLower = Top.min(axis=1)
+        elif isinstance(Top, pd.Series):
+            TopUpper = Top
+            TopLower = Top
+        else:
+            raise ValueError('Top muss entweder pd.DataFrame oder pd.Series sein.')
+
+        deltaT = TopUpper - TrefUpper
+        results['ÜTGS'][key] = deltaT[deltaT > 0].sum().round(2)
+
+        deltaT = TopLower - TrefLower
+        results['UTGS'][key] = deltaT[deltaT < 0].mul(-1).sum().round(2)
+    if Ret == 'dict': 
+        return results
+    else:
+        return pd.DataFrame(results)
