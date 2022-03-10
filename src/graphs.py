@@ -1,13 +1,13 @@
 import pandas as pd
 import numpy as np
 import math as m
-from src.utilities import eb_bbox, truncate_colormap, Temperaturgradstunden
+from src.utilities import eb_bbox, truncate_colormap, Temperaturgradstunden, Temperaturgradstunden_1
 from src.physics import g_abs, t_for_g
 import matplotlib.pyplot as plt
 
 ################################################ Thermischer Komfort nach DIN EN 15251:2012 - NA ################################################
 
-def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, title=True):
+def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, title=True, annotateComf=False):
 
     """Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 15251:2012 - NA
 
@@ -38,15 +38,7 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
         +df[(df.TAMB > 32) & (df.TROOM > 24) & (df.TROOM < 28)].shape[0]
         ) / length_data) * 100
 
-    untertemperaturstunden = (
-        df[(df.TAMB < 16) & (df.TROOM < 20)].shape[0] 
-        + df[((df.TAMB >= 16) & (df.TAMB <= 32)) & (df.TROOM < 16 + 0.25*df.TAMB)].shape[0]
-        +df[(df.TAMB > 32) & (df.TROOM < 24)].shape[0])
-
-    uebertemperaturstunden = (
-        df[(df.TAMB < 16) & (df.TROOM > 24)].shape[0] 
-        + df[((df.TAMB >= 16) & (df.TAMB <= 32)) & (df.TROOM > 20 + 0.25*df.TAMB)].shape[0]
-        +df[(df.TAMB > 32) & (df.TROOM > 28)].shape[0])
+    UTGS, ÜTGS = Temperaturgradstunden_1(df['TAMB'], df['TROOM'])
 
     if not ax:
         fig, ax = plt.subplots()
@@ -62,43 +54,40 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
         [t-2 for t in y], 
         color="0.8",
         label = 'Komfortbereich')
+        
+    if annotateComf:
+        ax.annotate(
+            r"$\bf{" + str(int(comf)) + str('\%') + "}$" + f' der Messpunkte\nim Komfortbereich',
+            xy=(df.TAMB.mean(), df.TROOM.mean()), 
+            xycoords='data',
+            xytext=(0.4, 0.85), 
+            textcoords='axes fraction',
+            arrowprops=dict(arrowstyle="->"),
+            bbox=eb_bbox,
+            horizontalalignment='center', 
+            verticalalignment='top')
 
-    ax.annotate(
-        r"$\bf{" + str(int(comf)) + str('\%') + "}$" + f' der Messpunkte\nim Komfortbereich',
-        xy=(df.TAMB.mean(), df.TROOM.mean()), 
-        xycoords='data',
-        xytext=(0.4, 0.85), 
-        textcoords='axes fraction',
-        arrowprops=dict(arrowstyle="->"),
-        bbox=eb_bbox,
-        horizontalalignment='center', 
-        verticalalignment='top')
-
-    if uebertemperaturstunden > 0:
-        text1 = r"$\bf{" + str('Übertemperaturstunden') + "}$" + f':\n{uebertemperaturstunden}'
+    if ÜTGS > 0:
+        text1 = r"$\bf{" + str('ÜTGS') + "}$" + f':\n{ÜTGS:.1f}'
         ax.text(
-            -14,    #-13,
-            28,    #28, 
-            text1.strip(), 
-            fontsize='small',     
-            style='normal', 
+            0.03,    #-13,
+            0.90,    #28, 
+            text1.strip(),   
             ha = 'left', 
             va = 'top',
-            #transform=ax.transAxes,
-            bbox=eb_bbox, 
+            transform=ax.transAxes,
+            #bbox=eb_bbox, 
             )
-    if untertemperaturstunden > 0:
-        text2 = r"$\bf{" + str('Untertemperaturstunden') + "}$" + f':\n{untertemperaturstunden}'
+    if UTGS > 0:
+        text2 = r"$\bf{" + str('UTGS') + "}$" + f':\n{UTGS:.1f}'
         ax.text(
-            39,
-            16, 
-            text2.strip(), 
-            fontsize='small',     
-            style='normal', 
+            0.97,
+            0.05, 
+            text2.strip(),  
             ha = 'right', 
             va = 'bottom',
-            #transform=ax.transAxes,
-            bbox=eb_bbox, 
+            transform=ax.transAxes,
+            #bbox=eb_bbox, 
             )
 
     ax.plot(
@@ -242,7 +231,6 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
                             0.03,
                             0.90, 
                             text1.strip(),
-                            style='normal', 
                             ha = 'left', 
                             va = 'top',
                             transform=ax.transAxes,
@@ -254,7 +242,6 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
                             0.97,
                             0.05, 
                             text2.strip(),      
-                            style='normal', 
                             ha = 'right', 
                             va = 'bottom',
                             transform=ax.transAxes,

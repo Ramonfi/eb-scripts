@@ -82,7 +82,9 @@ resampled = nachberarbeitete Datensätze. Sie haben einen durchgehenden Zeitinde
 
 # Berechne die Flächen der Airnodes für die Simulation
 idx = [(item.split('_')[1], item.split('_')[0]) for item in airnodes]
+
 A = pd.Series([21.775,2,6.46,17.85,8.8775, 4.8,0, 0, 0,17.85,2,4.8,15.075,2.0,12.92,17.85,8.8775,4.8,0],pd.MultiIndex.from_tuples(idx))
+
 # Berechne die Fläche pro Wohneinheit für die Simulation
 area = {}
 for app in ['WE1','WE2','WE3']:

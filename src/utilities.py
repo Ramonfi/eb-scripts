@@ -222,3 +222,34 @@ def Temperaturgradstunden(Tamb_g24:pd.DataFrame=None, Top:pd.DataFrame=None, Kat
         return results
     else:
         return pd.DataFrame(results)
+
+def Temperaturgradstunden_1(TAMB:pd.Series, TROOM:pd.Series):
+    '''
+    Berechne die Über- und Untertemperaturgradstunden nach DIN 15251:2012 - NA
+
+    ARGS:
+    ----
+        TAMB    Außentemperatur
+        TROOM   Raumtemperatur
+        
+    RETURNS:
+    ----
+        UTGS, ÜTGS
+    '''
+    df = pd.DataFrame({'TAMB': TAMB, 'TROOM': TROOM})
+    UTGS = 0
+    ÜTGS = 0
+
+    UTGS += (20 - df[(df['TAMB'] < 16) & (df['TROOM'] < 20)]['TROOM']).round(1).sum()
+    ÜTGS += (df[(df['TAMB'] < 16) & (df['TROOM'] > 24)]['TROOM'] - 24).round(1).sum()
+
+    dummy = df[(df['TAMB'] >= 16) & (df['TAMB'] <= 32) & (df['TROOM'] < 16 + 0.25 * df['TAMB'])]
+    UTGS += ((16 + 0.25 * dummy['TAMB']) - dummy['TROOM']).round(1).sum()
+
+    dummy = df[(df['TAMB'] >= 16) & (df['TAMB'] <= 32) & (df['TROOM'] > 20 + 0.25 * df['TAMB'])]
+    ÜTGS += (dummy['TROOM'] - (20 + 0.25 * dummy['TAMB'])).round(1).sum()
+
+    UTGS += (24 - df[(df['TAMB'] > 32) & (df['TROOM'] < 24)]['TROOM']).round(1).sum()
+    ÜTGS += (df[(df['TAMB'] > 32) & (df['TROOM'] > 28)]['TROOM'] - 28).round(1).sum()
+
+    return UTGS, ÜTGS
