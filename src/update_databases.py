@@ -1,14 +1,14 @@
-import shutil
 import pandas as pd
 import numpy as np
 import datetime as dt
 import os
 import matplotlib.pyplot as plt
-#import src.project_definitions as eb
 import logging as log
 import src.config as config
 import sys
-import src.utilities as ut
+
+from src.utilities import running_bar, send_email
+from src.project_definitions import dir_db, dir_results, em_dropbox, tf_dropbox, tf_archive, BUID, em_name_file
 
 ###############################################################___Functions___###############################################################
 #############################################################################################################################################
@@ -96,24 +96,24 @@ log.basicConfig(
 
 ## Dateipfade
 
-# Datenbanken
-dir_db = './eb-data/database'
+# # Datenbanken
+# dir_db = './eb-data/database'
 
-# Ordner für Auswertungen
-dir_results = './eb-data/Results'
+# # Ordner für Auswertungen
+# dir_results = './eb-data/Results'
 
 ### Rohdaten (Dropbox, Archiv & co)
-## 1) Energy Monitoring
-em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
+# ## 1) Energy Monitoring
+# em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
 
-## 2) Tinkerforge Dropbox Sync
-tf_dropbox = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
+# ## 2) Tinkerforge Dropbox Sync
+# tf_dropbox = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
 
-## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
-tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
+# ## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
+# tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
 
-# Kürzel der Messdaten
-buid ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
+# # Kürzel der Messdaten
+# buid ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
 
 
 ########################################################## Set environmental values #########################################################
@@ -138,11 +138,10 @@ def molline_update(send=True, plot=False):
     n_files = len(files)
 
     # Öffne Config-File zur Zuordnung der Moiline Senoren zu den Wohneinheiten
-    name_file = './src/energymeter.config'
-    if not os.path.isfile(name_file):
+    if not os.path.isfile(em_name_file):
         print('name-file für EnergyMeter nicht gefunden...!')
         sys.exit
-    meters = pd.read_csv(name_file,sep=';')
+    meters = pd.read_csv(em_name_file,sep=';')
 
     #startdate of regular observations for energymeter
     start = dt.datetime(2021,9,2)
@@ -161,7 +160,7 @@ def molline_update(send=True, plot=False):
             decimal= ',')
         # ...und einer Liste hinzugefügt.
         data.append(datasheet)
-        ut.running_bar(nf,n_files)
+        running_bar(nf,n_files)
 
     # Anschließend werden alle Datensheets in der Liste in einen Pandas-DataFrame übersetzt.
     df = pd.concat(data,ignore_index=True)
@@ -214,7 +213,7 @@ def molline_update(send=True, plot=False):
         log.info(f'creating overview graph.')
 
         ## preparing data
-        timemax = max([database[bui].index.max().date() for bui in buid])
+        timemax = max([database[bui].index.max().date() for bui in BUID])
         level_values = df.index.get_level_values
         result = (df.groupby([level_values(i) for i in [0,1,2]]
                             +[pd.Grouper(freq='D', level=-1)]).size())  # count observations
@@ -246,9 +245,9 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
     ## Erstelle Pfade zu den tinkerforge Datenbanken
 
     if OverwriteDatabase == 'all':
-        OverwriteDatabase = buid
+        OverwriteDatabase = BUID
 
-    db = {bui : os.path.join(dir_db,bui,'{}_tf_raw.csv'.format(bui)) for bui in buid}
+    db = {bui : os.path.join(dir_db,bui,'{}_tf_raw.csv'.format(bui)) for bui in BUID}
     ## Falls der Datenbank-Ordner noch nicht existiert, erstelle ihn.
     for bui in db:
         if os.path.isdir(os.path.dirname(db[bui])) == False:
@@ -261,7 +260,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
     notification = {}
 
    
-    for bui in buid:                                                        # Starte Import Datensheet. Iteration über die Einheiten (LB, MH, MW, PM, WD)
+    for bui in BUID:                                                        # Starte Import Datensheet. Iteration über die Einheiten (LB, MH, MW, PM, WD)
         if bui not in skip:                                                 # Skippe benutzerdefinierte Varianten.
             export_databases = False
             tf_drop_bui = os.path.join(tf_dropbox,bui)                      # Konstruiere den Pfad zum Dropbox Ordner der aktuellen Einheit
@@ -290,7 +289,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                         last_file = dropbox_files.pop(-1)                                                              # Überspriche die Datei von Heute, da so noch fortgeschrieben wird.
                         log.info(f'{bui}: Datei von Heute ({os.path.basename(last_file)}) wird übersprungen!')
                     if last_day.date() < last_day_soll:                                                                     # Wenn die neuste Datei mehr als einen tag zurück liegt funktioniert der Dropbox Abgleich nicht.
-                        offline[bui] = f'{buid[bui]} liefert seit {last_day.to_pydatetime().strftime("%d.%m.%Y")} ({((dt.datetime.today()-last_day.to_pydatetime()).days)} Tage(n)) keine neuen Daten mehr.'   # Erstelle eine Benachrichtigung
+                        offline[bui] = f'{BUID[bui]} liefert seit {last_day.to_pydatetime().strftime("%d.%m.%Y")} ({((dt.datetime.today()-last_day.to_pydatetime()).days)} Tage(n)) keine neuen Daten mehr.'   # Erstelle eine Benachrichtigung
                         log.info(offline[bui])
 
                     log.info(f'{bui}: Durchsuche Dropbox nach neuen Datensätzen.')
@@ -298,7 +297,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                     df1 = []                                                                # Definiere eine Liste in der die gefundenen neuen Datensätze gespeichert werden.
                     n_files = len(dropbox_files)                                            # Zähle alle gefundenen Datensätze (Für die Fortschrittsanzeige während des Ladens)
                     for n, file in enumerate(dropbox_files):                                # Iteration über alle Dateien in der Dropbox
-                        ut.running_bar(n,n_files)                                           # Plotte die Fortschrittsanzeige
+                        running_bar(n,n_files)                                           # Plotte die Fortschrittsanzeige
                         try:                                                                # Fange Exceptions ein und überspringe damit fehlerhafte Dateien
                             test = load_tf_file(file, nrows=1)                              # Lade die erste Zeile jedes Sheets
                             if test.index.isin(master_df[bui].index) == False:              # Prüfe ob diese Zeile bereits in der bestehenden Datenbank vorhanden ist.
@@ -344,7 +343,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                                 dfs.append(df)
                         except FileNotFoundError:
                             print(f'{file} wurde nicht geladen.')
-                        ut.running_bar(nf,n_files)                                          # Fortschrittsanzeige
+                        running_bar(nf,n_files)                                          # Fortschrittsanzeige
 
                     df = pd.concat(dfs)                                                     # Vereine alle Datensheets zu einem großen
                     log.info(f'{bui}: Lesen der Datensätze erfolgreich.')
@@ -421,9 +420,9 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
         if len(offline) == 0:
             text += '\n\n---------ALLE HÄUSER ONLINE - DROPBOX-SYNC FUNKTIONIERT---------\n\n'
                                         
-        for bui in buid:                                                                # Liste Haus für Haus, Tag für Tag die Fehlermeldungen auf
+        for bui in BUID:                                                                # Liste Haus für Haus, Tag für Tag die Fehlermeldungen auf
             if bui in offline or bui in notification:
-                text +='\n------'+ buid[bui] + ':------\n'
+                text +='\n------'+ BUID[bui] + ':------\n'
             if bui in offline:
                 text += '\n!!! ' + offline[bui] + ' !!!\n'
             if bui in notification:
@@ -436,7 +435,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                                                                                         
         if send==True:                                                                  # Wenn Benachrichtigungen da sind und sie auch versendet werden sollen, bereite die Mail vor                                                                     
             try:                                                                        # Der Versand der eMails erfolgt über eine vorgefertigte Funktion unter src.utilities. Darüber hinaus wird die config.py mit den Zugangsdaten zum eMail Provider benötigt.
-                ut.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
+                send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
                 log.info(f'Sensordaten-Übersicht gesendet')                               
             except Exception as e:                                                      # Schreibe was ins logbuch, wenn es nicht funktioniert hat
                 log.warning(f'Senden der Nachricht fehlgeschlagen: {e}')
@@ -453,7 +452,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
 
         if len(offline) > 0 and send==True:
             try:
-                ut.send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
+                send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
                 log.info(f'Offline Benachrichtigung gesendet!')
             except Exception as e:
                 log.warning(f'Senden der Nachricht fehlgeschlagen: {e}')
@@ -493,7 +492,7 @@ for logfile in onlyfiles:
                 end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
                 if end.date() >= (dt.date.today()-dt.timedelta(1)):
                     em_skip = True
-if tf_skip != buid:
+if tf_skip != BUID:
     tinkerforge_update(skip=tf_skip)
 if not em_skip:
     molline_update()

@@ -5,14 +5,36 @@ In diesem Ordner befinden sich die Auswertungen der Messdaten aus dem Projekt Ei
 
 
 
-## 2.1  Energieverbrauch
-## 2.2  Raumklima
-## 2.3  Nutzungsprofile
-## 2.4  Sonstiges
-### 2.4.1   Sensorstatus
-### 2.4.2   Abweichung trh
-### 2.4.3   Sensorliste
-### 2.5 Simulationsergebnisse
+## 2.1 Energieverbrauch
+    Erstellt Übersichtsgrafiken zum Energieverbrauch
+        Wärmeenergie:
+        - Tatsächlicher Verbrauch
+        - Spezifischer Verbrauch
+        - Lastkurve
+        Stromverbrauch (nach Zählerablesung)
+        - spezifisch
+        - Hochrechnung auf Beobachtungszeitraum
+## 2.2 Raumklima
+    Erstllt auswertungen des Raumklimas:
+        Messdatenverläufe
+        - Täglich (nach Raum)
+        - Monatlich (nach Wohneinheit und Raum)
+        Thermischer Komofort
+        - operativ / Lufttemperatur
+        - Monatlich / Jährlich / Gesamt
+## 2.3 Wetter
+    Erstellt Auswertungen der Wetterstation
+## 2.4 Nutzungsprofile
+    Erstellt durchschnittliche Nutzungsprofile basierend auf den Bewegungsmeldern und Fensterkontakten.
+## 2.5 Simulationsergebnisse
+    Wertet die Ergebnisse der Simulation aus EB2 aus. 
+    ACHTUNG! Ergebnisse müssen noch aufs Lehrstuhllaufwerk kopiert weren!!
+### 2.6 Sensorstatus
+    Erstellt Übersichtsgrafiken zur Überprüfung der Sensorfunktionalität
+### 2.7 Abweichung trh
+    Berechnet den Korrekturfaktor für die Luftfeuchte und die Temperatur.
+### 2.8 Sensorliste
+    Beinhaltet die Python Vorlage für die Sensorliste. 
 
 ## 3. src
 ### stylesheets

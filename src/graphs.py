@@ -31,12 +31,14 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
             y.append(18 + 0.25*t)
         if t > 32:
             y.append(26)
-
-    comf = ((
-        df[(df.TAMB < 16) & (df.TROOM > 20) & (df.TROOM < 24)].shape[0]
-        +df[((df.TAMB >= 16) & (df.TAMB <= 32)) & (df.TROOM < 20 + 0.25*df.TAMB) & (df.TROOM > 16 + 0.25*df.TAMB)].shape[0]
-        +df[(df.TAMB > 32) & (df.TROOM > 24) & (df.TROOM < 28)].shape[0]
-        ) / length_data) * 100
+    try:
+        comf = ((
+            df[(df.TAMB < 16) & (df.TROOM > 20) & (df.TROOM < 24)].shape[0]
+            +df[((df.TAMB >= 16) & (df.TAMB <= 32)) & (df.TROOM < 20 + 0.25*df.TAMB) & (df.TROOM > 16 + 0.25*df.TAMB)].shape[0]
+            +df[(df.TAMB > 32) & (df.TROOM > 24) & (df.TROOM < 28)].shape[0]
+            ) / length_data) * 100
+    except ZeroDivisionError:
+        print('No Data to plot...')
 
     UTGS, ÜTGS = Temperaturgradstunden_1(df['TAMB'], df['TROOM'])
 
@@ -68,7 +70,7 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
             verticalalignment='top')
 
     if ÜTGS > 0:
-        text1 = r"$\bf{" + str('ÜTGS') + "}$" + f':\n{ÜTGS:.1f}'
+        text1 = r"$\bf{" + str('ÜTGS') + "}$" + f'\n{ÜTGS:.1f}'
         ax.text(
             0.03,    #-13,
             0.90,    #28, 
@@ -79,7 +81,7 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
             #bbox=eb_bbox, 
             )
     if UTGS > 0:
-        text2 = r"$\bf{" + str('UTGS') + "}$" + f':\n{UTGS:.1f}'
+        text2 = r"$\bf{" + str('UTGS') + "}$" + f'\n{UTGS:.1f}'
         ax.text(
             0.97,
             0.05, 
@@ -226,7 +228,7 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
             for kat in results[key]:
                 if key == 'ÜTGS':
                     if results[key][kat] > 0:
-                        text1 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
+                        text1 += f'KAT {kat}: {results[key][kat]:.1f}\n'
                         ax.text(
                             0.03,
                             0.90, 
@@ -237,7 +239,7 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
                             )
                 if key == 'UTGS':
                     if results[key][kat] > 0:
-                        text2 += 'KAT {}: {}\n'.format(kat, results[key][kat]) 
+                        text2 += f'KAT {kat}: {results[key][kat]:.1f}\n'
                         ax.text(
                             0.97,
                             0.05, 

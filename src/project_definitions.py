@@ -5,12 +5,8 @@ import datetime as dt
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot as plt
-import matplotlib.colors as colors
 import numpy as np
 from src.utilities import truncate_colormap
-from getpass import getpass
-import platform
 
 #########################################################  USER INPUTS  #############################################################################
 
@@ -48,10 +44,10 @@ dir_results_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\
 
 ### Rohdaten (Dropbox, Archiv & co)
 ## 1) Energy Monitoring
-em_path = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
+em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
 
 ## 2) Tinkerforge Dropbox Sync
-tf_path = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
+tf_dropbox = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
 
 ## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
 tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
@@ -62,6 +58,8 @@ if not os.path.exists(config_file):
     with open(config_file, "w") as f:
         f.write('sender = "email-adress"\npassword = ""\nsmtp=""emails={"name":"name <name@email.com>"}')
         f.close()
+
+em_name_file = config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'energymeter.config')
 
 # Erstelle eine ReadMe File im Projektverzeichnis
 readme = os.path.join(dir_db,'readme.txt')
@@ -134,4 +132,8 @@ WANDFLÄCHEN = {
     'Nachbarwohnung [SÜD]':16.3
     }
 
-KORREKTUR_RH = {'MH': 4.2,'MW': 13.5,'LB':5.3}
+df = pd.read_csv('.\src\KorrekturFaktoren.csv', index_col=[0])
+df.index = df.index.str.split('_', expand=True)
+
+KORREKTUR_RH = df.unstack().droplevel(0,axis=1).dropna(axis=1).round(1).to_dict()['deltaRH'] #{'MH': 4.2,'MW': 13.5,'LB':5.3}
+KORREKTUR_T = df.unstack().droplevel(0,axis=1).dropna(axis=1).round(1).to_dict()['deltaT']
