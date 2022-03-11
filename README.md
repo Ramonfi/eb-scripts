@@ -45,6 +45,14 @@ In diesem Ordner befinden sich die Auswertungen der Messdaten aus dem Projekt Ei
     Diese Datei enthält die Übersetzungen die Benötigt werden um die MollineSensoren korrekt auszulesen.
 ### graphs.py
     Diese Datei enthält die Vorlagen für die Komfort-Graphen.
+    - thermal_comfort_1()
+        Adaptives Comfortmodell nach DIN 15251:2012 NA
+    - thermal_comfort_2()
+        Adaptives Komfortmodell nach DIN 16789 Anhang B
+    - comfort_hx_diagramm()
+        HX Diagramm nach DIN 1946-1
+### KorrekturFaktoren.csv
+    Diese Datei enthält die Korrekturfaktoren für die trh-Sensoren.
 ### physics.py
     Diese Datei enthält einige nütztliche physikalische Funktionen.
 ### profect_definitions.py
@@ -58,10 +66,12 @@ In diesem Ordner befinden sich die Auswertungen der Messdaten aus dem Projekt Ei
         - Pyranometer: load_tf_pm()
         - Wetter: load_tf_weather()
         - Molline: load_energy_data()
-### style.py
-    Diese Datei entählt einige zusätzliche Formatierungen wie z.B.:
-        - Formate (din_a4, etc.)
-        - ...
+
+    Durch from src.sensor_reader import IND, AMB, EM können automatisch die Datenbanken importiert werden.
+### Sensoruebersicht_template.xlsx
+    Vorlage für die Sensorüberischt
+### Stromzähler.csv
+    Datei zum Eintragen der Stromzählerstände.
 ### update_databases.py
     Diese Datei erstellt die Datenbanken aus den einzelnen Datensheets aus Bad Aibling. Wenn diese Datei in ein anderes Sript importiert wird, wird überprüft, ob es heute schon ein Update gab und wenn nicht, ein Datenbank-Update durchgeführt. Achtung! Das kann einige Zeit in Anspruch nehmen, wenn man nicht im Uni-Netzwerk ist.
 ### utilities.py
@@ -82,3 +92,15 @@ In diesem Ordner befinden sich die Auswertungen der Messdaten aus dem Projekt Ei
             versendet eine eMail. 
         - set_ticks()
             Stellt die Achsenskalierung nach Wunsch ein.
+        - calcTOP()
+            Berechne die operative Temperatur aus der Schwarzkugel- und der Lufttemperatur
+        - KOMPASS
+            Übersetzungen der Kurzfassungen der Himmelsrichtungen
+        - DIN Formate
+        - eb_bbox
+            Vorlage für die Standard-Beschriftungsbox
+        - Temperaturgradstunden
+            Berechnet die Über- bzw. Untergradstunden nach DIN 16789 Anhang B
+        - Temperaturgradstunden_1
+            Berechnet die Über bzw. Untergradstunden nach DIN 15251:2012 NA
+            

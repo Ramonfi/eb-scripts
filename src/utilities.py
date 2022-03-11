@@ -147,11 +147,10 @@ KOMPASS = {'n': 'Nord', 'o':'Ost', 's': 'Süd', 'w': 'West'}
 def cm(inch):return inch*2.54
 def inch(cm):return cm/2.54
 
-din_a4 = (inch(21), inch(29.7))
-din_a4_landscape = (inch(29.7), inch(21))
-
-din_a3 = (inch(29.7), inch(2*21))
-din_a3_landscape = (inch(2*21), inch(29.7))
+DIN = {'A4': (inch(21), inch(29.7)),
+    'A4L': (inch(29.7), inch(21)),
+    'A3': (inch(29.7), inch(2*21)),
+    'A3L': (inch(2*21), inch(29.7))}
 
 # ======== Vorlage BBOX f. Annotationen ==========
 eb_bbox = {
