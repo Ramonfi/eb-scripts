@@ -45,8 +45,10 @@ In diesem Ordner befinden sich die Auswertungen der Messdaten aus dem Projekt Ei
     Diese Datei enthält die Übersetzungen die Benötigt werden um die MollineSensoren korrekt auszulesen.
 ### graphs.py
     Diese Datei enthält die Vorlagen für die Komfort-Graphen.
+
     - thermal_comfort_1()
         Adaptives Comfortmodell nach DIN 15251:2012 NA
+
     - thermal_comfort_2()
         Adaptives Komfortmodell nach DIN 16789 Anhang B
     - comfort_hx_diagramm()
@@ -57,17 +59,17 @@ In diesem Ordner befinden sich die Auswertungen der Messdaten aus dem Projekt Ei
     Diese Datei enthält einige nütztliche physikalische Funktionen.
 ### profect_definitions.py
     Diese Datei enthält einige allgemeine Informationen zum Projekt wie:
-        - Übersetzungen zwischen Abkürzungen (Bauweisen, Wohnungsbezeichnungen, Sensoren, etc.)
-        - Dateipfade zu den neuen Datensätzen sowie zum Datenbank-Speicherort
-        - Grundflächen
+    - Übersetzungen zwischen Abkürzungen (Bauweisen, Wohnungsbezeichnungen, Sensoren, etc.)
+    - Dateipfade zu den neuen Datensätzen sowie zum Datenbank-Speicherort
+    - Grundflächen
 ### sensor_reader.py
     Diese Datei enthält die Funktionen zum einlesen der Datenbanken in ein Skript.
         - TinkerForge: load_tf_bui()
         - Pyranometer: load_tf_pm()
         - Wetter: load_tf_weather()
         - Molline: load_energy_data()
-
-    Durch from src.sensor_reader import IND, AMB, EM können automatisch die Datenbanken importiert werden.
+        
+        - import_data(mode, startdate, timestep)
 ### Sensoruebersicht_template.xlsx
     Vorlage für die Sensorüberischt
 ### Stromzähler.csv

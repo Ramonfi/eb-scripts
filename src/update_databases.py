@@ -81,52 +81,16 @@ def load_tf_file(path, nrows=None, debug = False):
         df.sort_index(axis=0, inplace=True)
         return df
 
-########################################################## Set environmental values #########################################################
-#############################################################################################################################################
-
-log.basicConfig(
-    format='%(asctime)s -- %(levelname)s -- %(message)s', 
-    datefmt='%d.%m.%Y %H:%M:%S', 
-    level=log.INFO,
-    encoding='utf-8',
-    handlers=[
-        log.FileHandler(f"logs/{dt.date.today().strftime('%y_%m_%d')}_einfach-bauen.log"),
-        log.StreamHandler()]
-    )
-
-## Dateipfade
-
-# # Datenbanken
-# dir_db = './eb-data/database'
-
-# # Ordner für Auswertungen
-# dir_results = './eb-data/Results'
-
-### Rohdaten (Dropbox, Archiv & co)
-# ## 1) Energy Monitoring
-# em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
-
-# ## 2) Tinkerforge Dropbox Sync
-# tf_dropbox = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
-
-# ## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
-# tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
-
-# # Kürzel der Messdaten
-# buid ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
-
-
-########################################################## Set environmental values #########################################################
-#############################################################################################################################################
-
-#Dateikürzel im Archiv
-#buid = ['LB','MH','MW','WD']
-#buid_long ={'LB':'Leichtbetonhaus','MH':'Massivholzhaus','MW':'Ziegelhaus', 'WD':'Wetterstation', 'PM':'Pyranometer'}
-
-################################################################ MAIN SCRIPT ################################################################
-#############################################################################################################################################
-
 def molline_update(send=True, plot=False):
+    log.basicConfig(
+        format='%(asctime)s -- %(levelname)s -- %(message)s', 
+        datefmt='%d.%m.%Y %H:%M:%S', 
+        level=log.INFO,
+        encoding='utf-8',
+        handlers=[
+            log.FileHandler(f"logs/{dt.date.today().strftime('%y_%m_%d')}_einfach-bauen.log"),
+            log.StreamHandler()]
+        )
     log.info(f'------ Starte Moline Update ------')
 
     if not os.path.isdir(em_dropbox):
@@ -241,6 +205,15 @@ def molline_update(send=True, plot=False):
 
 
 def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=False):
+    log.basicConfig(
+        format='%(asctime)s -- %(levelname)s -- %(message)s', 
+        datefmt='%d.%m.%Y %H:%M:%S', 
+        level=log.INFO,
+        encoding='utf-8',
+        handlers=[
+            log.FileHandler(f"logs/{dt.date.today().strftime('%y_%m_%d')}_einfach-bauen.log"),
+            log.StreamHandler()]
+        )
     log.info(f'------ Starte TinkerForge Update------')
     ## Erstelle Pfade zu den tinkerforge Datenbanken
 
@@ -459,42 +432,38 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
 
     log.info(f'------TinkerForge Update beendet!------')                                           # Schreibe ins Log, dass das Skript druchgelaufen ist. !Achtung: Nach diesem Eintrag wird entschieden, ob ein Datenbank update notwendig ist oder nicht. Wenn dieser Eintrag mit heutigem Datum im Log steht, wird die DAtenbank nicht aktualisiert, wenn das nicht der Fall ist, wird ein Update angestoßen.
 
-logpath = './logs'
-onlyfiles = [os.path.join(logpath, f) for f in os.listdir(logpath) if os.path.isfile(os.path.join(logpath, f))]
-onlyfiles.sort(key=lambda x: os.path.getmtime(x))
-onlyfiles.reverse()
-clean_old_logs = onlyfiles[7:]
-onlyfiles = onlyfiles[:7]
-for oldlog in clean_old_logs:
-    os.remove(oldlog)
-tf_skip = []
-em_skip = False
-for logfile in onlyfiles:
-    with open(logfile,encoding='latin-1') as f:
-        f = f.read().splitlines()
-        f.reverse()
-        data = []
-        for line in f:
-            line = line.split(' -- ')
-            if 'TinkerForge Datenbank' in line[2]:
-                timecode = line[0].strip()
-                bui = line[2].split(':')[0].strip()
-                info = line[2].split('|')
-                start = dt.datetime.strptime(info[1].strip(), "%Y-%m-%d %H:%M:%S")
-                end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
-                if end.date() >= (dt.date.today()):
-                    tf_skip.append(bui)
-            elif 'Molline Datenbanken exportiert!' in line[2]:
-                timecode = line[0].strip()
-                bui = line[2].split(':')[0].strip()
-                info = line[2].split('|')
-                start = dt.datetime.strptime(info[1].strip(), "%Y-%m-%d %H:%M:%S")
-                end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
-                if end.date() >= (dt.date.today()-dt.timedelta(1)):
-                    em_skip = True
-if tf_skip != BUID:
-    tinkerforge_update(skip=tf_skip)
-if not em_skip:
-    molline_update()
-else:
-    log.info('Molline-Datenbank up-to-date. Kein Update notwendig.')
+def up():
+    logpath = './logs'
+    onlyfiles = [os.path.join(logpath, f) for f in os.listdir(logpath) if os.path.isfile(os.path.join(logpath, f))]
+    onlyfiles.sort(key=lambda x: os.path.getmtime(x))
+    onlyfiles.reverse()
+    clean_old_logs = onlyfiles[7:]
+    onlyfiles = onlyfiles[:7]
+    for oldlog in clean_old_logs:
+        os.remove(oldlog)
+    tf_skip = []
+    em_skip = False
+    for logfile in onlyfiles:
+        with open(logfile,encoding='latin-1') as f:
+            f = f.read().splitlines()
+            f.reverse()
+            for line in f:
+                line = line.split(' -- ')
+                if 'TinkerForge Datenbank' in line[2]:
+                    bui = line[2].split(':')[0].strip()
+                    info = line[2].split('|')
+                    end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
+                    if end.date() >= (dt.date.today()):
+                        tf_skip.append(bui)
+                elif 'Molline Datenbanken exportiert!' in line[2]:
+                    bui = line[2].split(':')[0].strip()
+                    info = line[2].split('|')
+                    end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
+                    if end.date() >= (dt.date.today()-dt.timedelta(1)):
+                        em_skip = True
+    if tf_skip != BUID:
+        tinkerforge_update(skip=tf_skip)
+    if not em_skip:
+        molline_update()
+    else:
+        log.info('Molline-Datenbank up-to-date. Kein Update notwendig.')

@@ -162,7 +162,33 @@ def load_energy_data(bui, ts='1min'):
 
     return df
 
-startdate = '2021-06-01'
-IND = pd.concat({bui: load_tf_bui(bui, '1min').loc[startdate:] for bui in BUID},axis=1)
-AMB = pd.merge(load_tf_weather('1min').loc[startdate:], load_tf_pm('1min').loc[startdate:], left_index=True, right_index=True)
-EM = pd.concat({bui: load_energy_data(bui) for bui in BUID}, axis=1)
+def import_data(mode = 'all', startdate = '2021-06-01', timestep = '1min'):
+    '''
+    args:
+    -----
+        mode: {'all', 'IND', 'AMB', 'tinkerforge', 'all'} (default = 'all')
+            -- 'all' returns IND, AMB, EM
+            -- 'tinkerforge' retruns IND, AMB
+        startdate: (default = '2021-06-01')
+        timestep: {'1min', '15min', '60min'} (default = '1min')
+    '''
+    if mode == 'IND':
+        IND = pd.concat({bui: load_tf_bui(bui, timestep).loc[startdate:] for bui in BUID},axis=1)
+        return IND
+    elif mode == 'AMB':
+        AMB = pd.merge(load_tf_weather(timestep).loc[startdate:], load_tf_pm(timestep).loc[startdate:], left_index=True, right_index=True)
+        return AMB
+    elif mode == 'EM':    
+        EM = pd.concat({bui: load_energy_data(bui) for bui in BUID}, axis=1)
+        return EM
+    elif mode == 'all':
+        IND = pd.concat({bui: load_tf_bui(bui, timestep).loc[startdate:] for bui in BUID},axis=1)
+        AMB = pd.merge(load_tf_weather(timestep).loc[startdate:], load_tf_pm(timestep).loc[startdate:], left_index=True, right_index=True)
+        EM = pd.concat({bui: load_energy_data(bui) for bui in BUID}, axis=1)
+        return IND, AMB, EM
+    elif mode == 'tinkerforge':
+        IND = pd.concat({bui: load_tf_bui(bui, timestep).loc[startdate:] for bui in BUID},axis=1)
+        AMB = pd.merge(load_tf_weather(timestep).loc[startdate:], load_tf_pm(timestep).loc[startdate:], left_index=True, right_index=True)
+        return IND, AMB
+    else:
+        print('mode ungültig...')
