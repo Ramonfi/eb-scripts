@@ -8,7 +8,9 @@ import src.config as config
 import sys
 
 from src.utilities import running_bar, send_email
-from src.project_definitions import dir_db, dir_results, em_dropbox, tf_dropbox, tf_archive, BUID, em_name_file
+from src.project_definitions import dir_db, dir_results, em_dropbox, tf_dropbox, tf_archive, em_name_file
+
+BUID = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton', 'PM':'Pyranometer', 'WD':'Wetter'}
 
 ###############################################################___Functions___###############################################################
 #############################################################################################################################################
