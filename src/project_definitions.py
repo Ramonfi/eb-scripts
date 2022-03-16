@@ -32,25 +32,29 @@ airnodes = ['A1_WE1_Wohnen','A2_WE1_Innenflur','A3_WE1_Diele','A4_WE1_Schlafen',
 # Datenbanken
 ### Lokaler Pfad in Projektverzeichnis
 dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data')
+#dir = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten'
+#dir_db = os.path.join(dir,'2_datenbank')
 dir_db = os.path.join(dir,'database')
-### Pfad auf Lehrstuhl-Laufwerk
-dir_db_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\2_datenbank'
+### Pfad auf Lehrstuhl-Laufwerks
+
 
 # Ordner für Auswertungn
 ### Lokaler Pfad in Projektverzeichnis
 dir_results = os.path.join(dir,'Results')
-### Pfad auf Lehrstuhl-Laufwerk
-dir_results_ls = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\3_auswertung'
+
 
 ### Rohdaten (Dropbox, Archiv & co)
 ## 1) Energy Monitoring
 em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
+#em_dropbox = os.path.join(dir,'1_rohdaten','EM','RmCU')
 
 ## 2) Tinkerforge Dropbox Sync
-tf_dropbox = os.path.join(r'\\nas.ads.mwn.de','tuar','l15','private','DATA','FORSCHUNG','04_Projekte','2021','Einfach_Bauen_3','Daten','1_rohdaten')
+tf_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten'
+#tf_dropbox = os.path.join(dir,'1_rohdaten')
 
 ## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
 tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
+#tf_archive = os.path.join(dir,'ARCHIV','1_rohdaten')
 
 # Erstelle eine Vorlage für die config-File die zum eMail Versand notwendig ist.
 config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.py')
@@ -61,7 +65,7 @@ if not os.path.exists(config_file):
 
 em_name_file = config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'energymeter.config')
 
-# Erstelle eine ReadMe File im Projektverzeichnis
+# Erstelle eine ReadMe File im Projektverzeichnis (Abkürzungen)
 readme = os.path.join(dir_db,'readme.txt')
 with open(readme, "w") as f:
     f.write(f'Stand: {dt.date.today()-dt.timedelta(days=1)}\n\n\

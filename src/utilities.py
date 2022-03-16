@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import os
+import datetime as dt
 
 # ======== costum colormap ==========
 def truncate_colormap(cmap, minval=0.0, maxval=1.0, n=100):
@@ -147,6 +148,8 @@ KOMPASS = {'n': 'Nord', 'o':'Ost', 's': 'Süd', 'w': 'West'}
 def cm(inch):return inch*2.54
 def inch(cm):return cm/2.54
 
+INDOC = (inch(16), inch(16/4*3))
+
 DIN = {'A4': (inch(21), inch(29.7)),
     'A4L': (inch(29.7), inch(21)),
     'A3': (inch(29.7), inch(2*21)),
@@ -252,3 +255,26 @@ def Temperaturgradstunden_1(TAMB:pd.Series, TROOM:pd.Series):
     ÜTGS += (df[(df['TAMB'] > 32) & (df['TROOM'] > 28)]['TROOM'] - 28).round(1).sum()
 
     return UTGS, ÜTGS
+
+
+def PeriodToDatetimeIndex(df, year:int):
+    df.index = dt.datetime(year,1,1,0,0) + pd.to_timedelta(df.index, 'Hours')
+    df.index = df.index.set_names(['Datetime'])
+    return df
+
+def HOYtoDatetime(hoy, year):
+    '''
+    Wandle HourOfYear Daten in ein Datetime Objekt um.
+
+    Args:
+    -----
+        hoy: int
+        Hour of Year
+        year: int
+        Jahr des Datensatzes
+        
+    Returns: 
+    ----
+    int
+    '''
+    return dt.datetime(year,1,1,0,0) + dt.timedelta(hoy)

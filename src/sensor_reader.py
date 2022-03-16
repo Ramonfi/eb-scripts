@@ -166,7 +166,7 @@ def import_data(mode = 'all', startdate = '2021-06-01', timestep = '1min'):
     '''
     args:
     -----
-        mode: {'all', 'IND', 'AMB', 'tinkerforge', 'all'} (default = 'all')
+        mode: {'all', 'IND', 'AMB','EM', 'tinkerforge'} (default = 'all')
             -- 'all' returns IND, AMB, EM
             -- 'tinkerforge' retruns IND, AMB
         startdate: (default = '2021-06-01')
