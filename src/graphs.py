@@ -1,21 +1,36 @@
 import pandas as pd
 import numpy as np
 import math as m
-from src.utilities import eb_bbox, truncate_colormap, Temperaturgradstunden, Temperaturgradstunden_1
+from src.utilities import eb_bbox, truncate_colormap, Temperaturgradstunden, Temperaturgradstunden_1, INDOC
 from src.physics import g_abs, t_for_g
 import matplotlib.pyplot as plt
+import operator as op
 
 ################################################ Thermischer Komfort nach DIN EN 15251:2012 - NA ################################################
 
 def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, title=True, annotateComf=False):
 
-    """Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 15251:2012 - NA
+    """
+    Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 15251:2012 - NA.
 
-    Keyword arguments:
-    :param TAMBG -- Außentemperatur, mittelwert in stündlichen Schritten. Übergabe als pd.Series oder pd.DataFrame.
-    :param TROOM -- Raumtemperatur. stündliche Mittelwerte. Übergabe als pd.Series oder pd.DataFrame.
-    :param ax -- plt.axes instanz zum plotten des graphen
-    :param mode -- 'air' für Lufttemperatur, 'op' für operative Temperatur
+    Wenn ax = None: returns fig, ax
+
+    Args:
+    ----
+
+    TAMBG --        Außentemperatur, mittelwert in stündlichen Schritten. Übergabe als pd.Series oder pd.DataFrame.
+    TROOM --        Raumtemperatur. stündliche Mittelwerte. Übergabe als pd.Series oder pd.DataFrame.
+    ax --           plt.axes instanz zum plotten des graphen (default = None)
+    mode --         'air' für Lufttemperatur, 'op' für operative Temperatur (default = 'air')
+    ms =            Markersize im Plot
+    legend_ms:      Markerscale in der Legende
+    title:          Deaktiviert den Titel im Plot
+    annotateComf:   Plottet eine Box mit dem prozentualen Anteil der Messpunkte im Comfortbereich (Beta)
+
+    Returns:
+    ----
+
+    fig, ax         
     """
     df = pd.concat([TAMB,TROOM],axis=1)
     df.columns = ['TAMB', 'TROOM']
@@ -43,7 +58,10 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
     UTGS, ÜTGS = Temperaturgradstunden_1(df['TAMB'], df['TROOM'])
 
     if not ax:
-        fig, ax = plt.subplots()
+        fig, ax = plt.subplots(figsize=INDOC)
+        ret = True
+    else:
+        ret = False
 
     ax.plot(x, y, c='k',ls = 'dashed', label = 'Komforttemperatur')
    
@@ -120,11 +138,12 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
         ncol=99,
         #bbox_to_anchor=(1,1.1),
         frameon=False)
-
+    if ret:
+        return fig, ax
 
 ################################################ Thermischer Komfort nach DIN EN 16798-1 - Anhang B2.2 ################################################
 
-def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str='air', kat:list = ['II'], ms:float=None, legend_ms:float=None, title:bool=True):
+def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, mode:str='air', kat:list = ['II'], ms:float=None, legend_ms:float=None, title:bool=True):
     """Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 16798-1 - Anhang B2.2
 
     Args:
@@ -146,6 +165,12 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
 
         title:      Plotte die Überschrift des Graphen (default = True)
     """
+    if not ax:
+        fig, ax = plt.subplots(figsize=INDOC)
+        ret = True
+    else:
+        ret = False
+
     df = pd.concat([TAMBG24,TROOM],axis=1)
     df.columns = ['Tamb_g24', 'TROOM']
     df.dropna(inplace=True)
@@ -180,7 +205,6 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
                 f'KAT {key}',
                 xy=(min(x1), 
                 min(y1)), 
-                fontsize='small',
                 xycoords='data',
                 xytext=(-5, 0), 
                 textcoords='offset points',
@@ -192,7 +216,6 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
                 f'KAT {key}',
                 xy=(min(x2), 
                 min(y2)), 
-                fontsize='small',
                 xycoords='data',
                 xytext=(-5, 0), 
                 textcoords='offset points',
@@ -271,11 +294,12 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes, mode:str=
         loc='left',
         #pad = 20
         )
-
+    if ret:
+        return fig, ax
     
 ################################################ HX DIAGRAMM ################################################
 
-def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,legend_ms=None):
+def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=None,legend_ms=None, xlim = (-20, 40), ylim = (0, 20)):
     """Erstelle ein Diagramm zur Evaluation des thermich hygrischen Komoforts nach DIN 1946-6.
 
     Args:
@@ -292,6 +316,11 @@ def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,l
 
         cmap: Farbschema des plots. (default 'Blues_r')
     """
+    if not ax: 
+        fig, ax = plt.subplots(figsize=INDOC)
+        ret = True
+    else:
+        ret = False
     # absolute Luftfeuchtigkeit in g/kg
 
     new_colors = [truncate_colormap(cmap,0,1)(1. * i/2) for i in range(2)]
@@ -308,10 +337,18 @@ def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,l
     t_max = 26
 
     #Ränder der Grafik
-    min_x = -20
-    min_y = 0
-    max_x = 40
-    max_y = 20
+    # min_x = -20
+    # min_y = 0
+    # max_x = 40
+    # max_y = 20
+
+    # Temp
+    min_x = xlim[0]
+    max_x = xlim[1]
+
+    # g
+    min_y = ylim[0]
+    max_y = ylim[1]
 
     #Achsen Minima und Maxima
     ax.set_xlim(min_x,max_x)
@@ -320,9 +357,10 @@ def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,l
     # Linien für das HX-Diagramm erstellen
     for item in rh_graph:
         ax.plot(drybulb_graph, [g_abs(t,item) for t in drybulb_graph], 'k-')
-        if g_abs(40,item) <= max_y:
-            ax.text(40,g_abs(40,item), '  {}%'.format(int(item)), ha = 'left', va = 'bottom')
-        if g_abs(40,item) > max_y:
+        if g_abs(max_x,item) <= max_y:
+            if g_abs(max_x,item) > min_y:
+                ax.text(max_x, g_abs(max_x,item), '  {}%'.format(int(item)), ha = 'left', va = 'bottom')
+        if g_abs(max_x,item) > max_y:
             ax.text(t_for_g(max_y,item),max_y, s='{}%'.format(int(item)), ha = 'left', va = 'bottom', rotation = 45)
     
     tx = np.linspace(t_min,t_max,21)
@@ -415,7 +453,9 @@ def comfort_hx_diagramm(t1, rh1, ax, t2=None,rh2=None, cmap='Blues_r', ms=None,l
 
     ax.legend(
         loc='upper left',
-        ncol=2,
+        ncol=1,
         #bbox_to_anchor=(0.025,1,1,0.125),
         markerscale = legend_ms,
         frameon=False)
+    if ret:
+        return fig, ax

@@ -410,7 +410,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                                                                                         
         if send==True:                                                                  # Wenn Benachrichtigungen da sind und sie auch versendet werden sollen, bereite die Mail vor                                                                     
             try:                                                                        # Der Versand der eMails erfolgt über eine vorgefertigte Funktion unter src.utilities. Darüber hinaus wird die config.py mit den Zugangsdaten zum eMail Provider benötigt.
-                send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
+                send_email(who=[config.emails['laura']],sender=config.emails['sender'],subject='EINFACH MESSEN: SENSORS NOT WORKING!',text=text,password=config.password,smtp=config.smtp)
                 log.info(f'Sensordaten-Übersicht gesendet')                               
             except Exception as e:                                                      # Schreibe was ins logbuch, wenn es nicht funktioniert hat
                 log.warning(f'Senden der Nachricht fehlgeschlagen: {e}')
@@ -427,7 +427,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
 
         if len(offline) > 0 and send==True:
             try:
-                send_email(who=[config.emails['roman']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
+                send_email(who=[config.emails['laura']],sender=config.emails['sender'],subject='EINFACH MESSEN: OFFLINE ALERT!',text=text,password=config.password,smtp=config.smtp)
                 log.info(f'Offline Benachrichtigung gesendet!')
             except Exception as e:
                 log.warning(f'Senden der Nachricht fehlgeschlagen: {e}')

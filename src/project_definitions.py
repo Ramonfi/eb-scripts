@@ -31,30 +31,30 @@ airnodes = ['A1_WE1_Wohnen','A2_WE1_Innenflur','A3_WE1_Diele','A4_WE1_Schlafen',
 
 # Datenbanken
 ### Lokaler Pfad in Projektverzeichnis
-dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data')
-#dir = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten'
-#dir_db = os.path.join(dir,'2_datenbank')
-dir_db = os.path.join(dir,'database')
-### Pfad auf Lehrstuhl-Laufwerks
+# Projektordner
 
+## a) es wird eine lokale Kopie der Datenbank im Projektverzeichnis 'EB-Scipts' angelegt:
+#dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data')
 
-# Ordner für Auswertungn
-### Lokaler Pfad in Projektverzeichnis
-dir_results = os.path.join(dir,'Results')
+## b) Die Datenbank und die Resultate werden direkt auf dem Lehrstuhllaufwerk gespeichert
+dir = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten'
+
+# Unterordner für Datenbanken
+dir_db = os.path.join(dir,'2_datenbank')
+# Unterordner für Auswertungn
+dir_results = os.path.join(dir,'3_auswertung')
 
 
 ### Rohdaten (Dropbox, Archiv & co)
 ## 1) Energy Monitoring
 em_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten\EM\RmCU'
-#em_dropbox = os.path.join(dir,'1_rohdaten','EM','RmCU')
 
 ## 2) Tinkerforge Dropbox Sync
 tf_dropbox = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\1_rohdaten'
-#tf_dropbox = os.path.join(dir,'1_rohdaten')
 
 ## 3) Archiv: Daten vor September (ohne Dropbox-Sync)
 tf_archive = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten\ARCHIV\1_rohdaten'
-#tf_archive = os.path.join(dir,'ARCHIV','1_rohdaten')
+
 
 # Erstelle eine Vorlage für die config-File die zum eMail Versand notwendig ist.
 config_file = os.path.join(os.path.dirname(os.path.realpath(__file__)),'config.py')
