@@ -174,34 +174,6 @@ def molline_update(send=True, plot=False):
         for ts in ['1min']:
             database[bui].resample(ts).fillna('pad').to_csv(os.path.join(export[bui], f'{bui}_em_resampled_{ts}.csv'))  # saving reshaped database
 
-    if plot:
-        # plotting graph...
-        log.info(f'creating overview graph.')
-
-        ## preparing data
-        timemax = max([database[bui].index.max().date() for bui in BUID])
-        level_values = df.index.get_level_values
-        result = (df.groupby([level_values(i) for i in [0,1,2]]
-                            +[pd.Grouper(freq='D', level=-1)]).size())  # count observations
-        result = pd.DataFrame(result, columns=['n_data'])   # make DataFrame of it
-        result.reset_index(level=[0,1,2],inplace=True)      # clean up DataFrame
-        result['meter'] = result['bui'] + '_' + result['app'] + '_' + result['type']    #clean up index
-        result.drop(['bui','app','type'],axis=1,inplace=True)   # remove unneeded columns
-
-        ## plotting
-        f, ax = plt.subplots(figsize=(15,10))
-        ax.plot(result.index, result.meter, linestyle='None')
-        sc = ax.scatter(result.index, result.meter, c=result.n_data, s=len(result.index.unique()), alpha=0.75,marker = 's', cmap='RdYlGn')
-        cbar = f.colorbar(sc)
-        cbar.set_label("Observations per day ", loc='top')
-        f.suptitle(f'Übersicht Datenempfang Wärmemengenzähler\nStand: {timemax}')
-        f.tight_layout()
-
-        ## exporting graph.
-        exdir = os.path.join(dir_results,'Allgemein')
-        if not os.path.isdir(exdir):
-            os.makedirs(exdir)
-        f.savefig(os.path.join(exdir,f'Molline_Datenempfang_Übersicht.png'),dpi=300)
     log.info(f'Molline Datenbanken exportiert! | {start} | {end}')
     log.info(f'------ Molline Update beendet ------')
 
@@ -434,7 +406,13 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
 
     log.info(f'------TinkerForge Update beendet!------')                                           # Schreibe ins Log, dass das Skript druchgelaufen ist. !Achtung: Nach diesem Eintrag wird entschieden, ob ein Datenbank update notwendig ist oder nicht. Wenn dieser Eintrag mit heutigem Datum im Log steht, wird die DAtenbank nicht aktualisiert, wenn das nicht der Fall ist, wird ein Update angestoßen.
 
-def up():
+def up(send = True, OverwriteDatabases = False):
+
+    if OverwriteDatabases:
+        tinkerforge_update(OverwriteDatabase='all')
+        molline_update()
+        return
+
     logpath = './logs'
     onlyfiles = [os.path.join(logpath, f) for f in os.listdir(logpath) if os.path.isfile(os.path.join(logpath, f))]
     onlyfiles.sort(key=lambda x: os.path.getmtime(x))
@@ -464,8 +442,8 @@ def up():
                     if end.date() >= (dt.date.today()-dt.timedelta(1)):
                         em_skip = True
     if tf_skip != BUID:
-        tinkerforge_update(skip=tf_skip)
+        tinkerforge_update(skip=tf_skip, send=send)
     if not em_skip:
-        molline_update()
+        molline_update(send=send)
     else:
         log.info('Molline-Datenbank up-to-date. Kein Update notwendig.')
