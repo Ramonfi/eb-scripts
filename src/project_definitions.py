@@ -34,10 +34,10 @@ airnodes = ['A1_WE1_Wohnen','A2_WE1_Innenflur','A3_WE1_Diele','A4_WE1_Schlafen',
 # Projektordner
 
 ## a) es wird eine lokale Kopie der Datenbank im Projektverzeichnis 'EB-Scipts' angelegt:
-dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data')
+#dir = os.path.join(os.path.dirname(os.path.dirname(os.path.realpath(__file__))),'eb-data')
 
 ## b) Die Datenbank und die Resultate werden direkt auf dem Lehrstuhllaufwerk gespeichert
-#dir = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten'
+dir = r'\\nas.ads.mwn.de\tuar\l15\private\DATA\FORSCHUNG\04_Projekte\2021\Einfach_Bauen_3\Daten'
 
 # Unterordner für Datenbanken
 dir_db = os.path.join(dir,'2_datenbank')
