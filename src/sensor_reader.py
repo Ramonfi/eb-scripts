@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import os
 from src.project_definitions import BUID, dir_db
+import datetime as dt
 
 # Scanne das Projektverzeichnis nach den Datenbanken und speichere die Pfade ab.
 files ={}
@@ -35,14 +36,11 @@ def load_tf_bui(bui, timestep='60min',multiindex=True):
             path, 
             decimal='.', 
             na_values = '#N/V',
-            parse_dates = ['Datetime'],
-            infer_datetime_format=True,
-            index_col='Datetime',
-            dayfirst=True,
             low_memory=False
             )
-
     df.replace([' ','  '],np.NAN,inplace=True)
+    df.set_index( pd.to_datetime(df['Datetime'], utc=True).dt.tz_convert('Europe/Berlin'), inplace=True)
+    df.drop('Datetime',axis=1,inplace=True)
     if multiindex:
         idx = []
         for col in df.columns:
@@ -104,12 +102,10 @@ def load_tf_pm(timestep='60min'):
         path, 
         decimal='.', 
         na_values = '#N/V',
-        parse_dates = ['Datetime'],
-        infer_datetime_format=True,
-        index_col='Datetime',
-        dayfirst=True,
         low_memory=False
         )
+    df.set_index( pd.to_datetime(df['Datetime'], utc=True).dt.tz_convert('Europe/Berlin'), inplace=True)
+    df.drop('Datetime',axis=1,inplace=True)
     df['Direct W/m^2'][df['Direct W/m^2'] < 0] = 0
     df['Diffuse W/m^2'] = df['Global W/m^2'] - df['Direct W/m^2']
     #df = df.abs()
@@ -126,12 +122,10 @@ def load_tf_weather(timestep='60min'):
         path, 
         decimal='.', 
         na_values = '#N/V',
-        parse_dates = ['Datetime'],
-        infer_datetime_format=True,
-        index_col='Datetime',
-        dayfirst=True,
         low_memory=False
         )
+    df.set_index( pd.to_datetime(df['Datetime'], utc=True).dt.tz_convert('Europe/Berlin'), inplace=True)
+    df.drop('Datetime',axis=1,inplace=True)
     df.columns = ['ID', 'T_amb', 'Rh_amb','windspeed','gustspeed','rain','winddir','btry']
     df.drop(['ID', 'btry'],axis = 1,inplace=True)
     df['rain'].replace(0,np.nan,inplace=True)
@@ -141,7 +135,7 @@ def load_tf_weather(timestep='60min'):
 
 def load_energy_data(bui, ts='1min'):
     df = pd.read_csv(files['em'][bui][ts], index_col = [0], header=[0,1,2],low_memory=False)
-    df.index = pd.to_datetime(df.index)
+    df.index = pd.to_datetime(df.index, utc=True).tz_convert('Europe/Berlin')
     df.drop('TPID',axis=1,level=2,inplace=True)
     meters = {'HQ':'Energie','VW':'Volumen','H':'Heizung','W':'Wasser'}
     idx = []

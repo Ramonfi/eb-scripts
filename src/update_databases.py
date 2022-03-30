@@ -70,10 +70,11 @@ def load_tf_file(path, nrows=None, debug = False):
                 date=col
                 drop.append(col)
             if col == 'Time' or col =='Uhrzeit':
-                time=col
+                time = col
                 drop.append(col)
 
         df.insert(0,'Datetime',pd.to_datetime(df[date] +' '+ df[time],dayfirst=True))
+
         df.drop(drop,axis=1,inplace=True)
 
         if df.Datetime.is_unique != True:
@@ -131,8 +132,7 @@ def molline_update(send=True, plot=False):
     # Anschließend werden alle Datensheets in der Liste in einen Pandas-DataFrame übersetzt.
     df = pd.concat(data,ignore_index=True)
     # Nun müssen noch die Zeitstempel vereinheitlicht werden...
-    df.insert(0,'Datetime', pd.to_datetime(df['Timestamp']))
-    df['Datetime'] = df['Datetime'].dt.tz_localize(None)
+    df.insert(0,'Datetime', pd.to_datetime(df['Timestamp']).dt.tz_localize(None))
     df = df.drop(axis=1,labels='Timestamp')
     log.info(f'Reading files finished.')
 
@@ -153,6 +153,7 @@ def molline_update(send=True, plot=False):
         df.loc[df.TPID.str.contains(str(tpid)), 'app']=meters.Wohnung[i]    # rename meter (appartment)
     df = df.set_index(['bui','app', 'type', 'Datetime']).sort_index()       # sort DataFrame
     end = df.index.droplevel([0,1,2]).max()
+    end = (end - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
     log.info(f'Postprocessing finished.')
 
     # exporting database
@@ -174,7 +175,7 @@ def molline_update(send=True, plot=False):
         for ts in ['1min']:
             database[bui].resample(ts).fillna('pad').to_csv(os.path.join(export[bui], f'{bui}_em_resampled_{ts}.csv'))  # saving reshaped database
 
-    log.info(f'Molline Datenbanken exportiert! | {start} | {end}')
+    log.info(f'Molline Datenbanken exportiert! | {start:%Y-%m-%d} | {end:%Y-%m-%d}')
     log.info(f'------ Molline Update beendet ------')
 
 
@@ -248,8 +249,9 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                         try:                                                                # Fange Exceptions ein und überspringe damit fehlerhafte Dateien
                             test = load_tf_file(file, nrows=1)                              # Lade die erste Zeile jedes Sheets
                             if test.index.isin(master_df[bui].index) == False:              # Prüfe ob diese Zeile bereits in der bestehenden Datenbank vorhanden ist.
-                                newdate = pd.to_datetime(test.index.values.min()).date()    # Wenn es sich um eine neue Zeile handelt, extrahiere das Datum von dem die Aufzeichnungen stammen
-                                log.info(f'{bui}: Neue Messdaten vom {newdate} gefunden!')            # Plotte eine kurze Info
+                                newdate = pd.to_datetime(test.index.values.min())    # Wenn es sich um eine neue Zeile handelt, extrahiere das Datum von dem die Aufzeichnungen stammen
+                                newdate = (newdate - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
+                                log.info(f'{bui}: Neue Messdaten vom {newdate:%Y-%m-%d} gefunden!')            # Plotte eine kurze Info
                                 newday = load_tf_file(file)                                 # Lade den kompletten Sheet
                                 for sensor, data in newday.iteritems():                     # Für den neuen Sheet: Gehe Spalte für Spalte durch und zähle die Fehlerhaften Beobachtungen
                                     check = data.isna().sum()/len(data.index)               # Berechne den Anteil der fehlenden Messpunkte
@@ -270,7 +272,9 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                     else:
                         master_df[bui].index = pd.to_datetime(master_df[bui].index)
                         start, ende = master_df[bui].index.min(), master_df[bui].index.max()
-                        log.info(f'{bui}: TinkerForge Datenbanken up to date! | {start} | {ende}')
+                        start = (start - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
+                        ende = (ende - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
+                        log.info(f'{bui}: TinkerForge Datenbanken up to date! | {start:%Y-%m-%d} | {ende:%Y-%m-%d}')
                 elif not os.path.isfile(db[bui]) or bui in OverwriteDatabase:               # Falls die Bedingung vom Eingang nicht zutrifft, sprich: Entweder wurde keine Datenbank gefunden oder die Datenbank SOLL überschrieben werden
                     log.info(f'{bui}: Keine Datenbank gefunden - erstelle neue aus dem Archiv.')
                     bui_path = os.path.join(tf_archive, bui)                                # Konstruiere den Pfad zum Ordner der entsprechenden Einheit im Archiv-Ordner
@@ -313,7 +317,7 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                 log.info(f'{bui}: Führe Post Processing durch')
                 master_df[bui].index = pd.to_datetime(master_df[bui].index)                 # Forme zuerst alle Indizes in das Datetime Format um.
                 if not master_df[bui].index.max().date() == dt.date.today():                # Nun Prüfe ob alle Datenbanken Aktuell sind, wenn nicht
-                    log.warning(f'{bui}: Datenbank ist nicht aktuell. Vermutlich funktioniert der Dropbox-abgleich aktuell nicht.')
+                    log.debug(f'{bui}: Datenbank ist nicht aktuell. Vermutlich funktioniert der Dropbox-abgleich aktuell nicht.')
                 for name, data in master_df[bui].iteritems():                               # Nun forme alle numerischen Daten in Float-Werte um
                     master_df[bui][name] = pd.to_numeric(data, errors='ignore')
                 if not master_df[bui].columns.is_unique:                                    # Warne wenn duplizierte Spalten vorhanden sind
@@ -335,6 +339,8 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                             master_df[bui].drop(cols[0],axis=1,inplace=True)
                             log.debug(f'{bui}: Stromzähler wurden zusammengefasst.')
                 start, ende = master_df[bui].index.min(), master_df[bui].index.max()        # Extrahiere das Start und Enddatum des gesamten Datensatzes                             
+                start = (start - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
+                ende = (ende - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
                 log.info(f'{bui}: Starte Export!')
                 allgood = True                                                              # Prüfwert, dass alle Datensätze korrekt exportiert wurden
                 for ts in ['1min', '15min', '60min']:                                       # Definiere die Zeitschritte für den Export
@@ -343,13 +349,14 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
                     
                     df_resampled = master_df[bui].resample(ts).last().asfreq(ts)            # Führe Resampling auf den gewünschten Zeitschritt durch.
                     if df_resampled.index.is_unique:                                        # Wenn der Index jetzt keine Fehler mehr enthält, exportiere den Datensatz
+                        df_resampled.index = (df_resampled.index - dt.timedelta(hours=1)).tz_localize('UTC').tz_convert('Europe/Berlin')
                         df_resampled.to_csv(os.path.join(dir_db,bui,'{}_tf_database_resampled_{}.csv'.format(bui, ts)))
                         log.debug(f'{bui}: Resampled auf {ts}')
                     else:
                         log.warning(f'{bui}: Resampling auf {ts} hat nicht geklappt! Es wurde nichts exportiert...')    # Falls Fehler enthalten sind, Schreibe eine Warnung ins Log 
                         allgood = False                                                     # Setze den Prüfwert auf Falsch
                 if allgood:                                                                 # Wenn alle exporte Geklappt haben, schreibe das ins log. 0
-                    log.info(f'{bui}: TinkerForge Datenbank exportiert! | {start} | {ende}')
+                    log.info(f'{bui}: TinkerForge Datenbank exportiert! | {start:%Y-%m-%d} | {ende:%Y-%m-%d}')
         else:
             log.info(f'{bui} wurde übersprungen.')
     # send missing data report
@@ -406,10 +413,10 @@ def tinkerforge_update(send=True, OverwriteDatabase=[], skip=[], force_reexport=
 
     log.info(f'------TinkerForge Update beendet!------')                                           # Schreibe ins Log, dass das Skript druchgelaufen ist. !Achtung: Nach diesem Eintrag wird entschieden, ob ein Datenbank update notwendig ist oder nicht. Wenn dieser Eintrag mit heutigem Datum im Log steht, wird die DAtenbank nicht aktualisiert, wenn das nicht der Fall ist, wird ein Update angestoßen.
 
-def up(send = True, OverwriteDatabases = False):
+def up(send = True, OverwriteDatabases = False, ForceReexport=False):
 
     if OverwriteDatabases:
-        tinkerforge_update(OverwriteDatabase='all')
+        tinkerforge_update(OverwriteDatabase='all', force_reexport=ForceReexport)
         molline_update()
         return
 
@@ -432,17 +439,17 @@ def up(send = True, OverwriteDatabases = False):
                 if 'TinkerForge Datenbank' in line[2]:
                     bui = line[2].split(':')[0].strip()
                     info = line[2].split('|')
-                    end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
+                    end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d")
                     if end.date() >= (dt.date.today()):
                         tf_skip.append(bui)
                 elif 'Molline Datenbanken exportiert!' in line[2]:
                     bui = line[2].split(':')[0].strip()
                     info = line[2].split('|')
-                    end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d %H:%M:%S")
+                    end = dt.datetime.strptime(info[2].strip(), "%Y-%m-%d")
                     if end.date() >= (dt.date.today()-dt.timedelta(1)):
                         em_skip = True
     if tf_skip != BUID:
-        tinkerforge_update(skip=tf_skip, send=send)
+        tinkerforge_update(skip=tf_skip, send=send, force_reexport=ForceReexport)
     if not em_skip:
         molline_update(send=send)
     else:
