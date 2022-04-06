@@ -12,10 +12,10 @@ from src.utilities import truncate_colormap
 
 # Ein paar Namen und Kurzbezeichnungen
 ### Kurzbezeichnung Häuser
-BUID = {'LB': 'Leichtbeton','MH': 'Massivholz','MW': 'Mauerwerk'}
-buid = {'MH': truncate_colormap('Greens_r',0, 0.6), 'MW': truncate_colormap('Oranges_r',0, 0.7), 'LB': truncate_colormap('Blues_r',0, 0.6)}
+BUID = {'LB': 'Leichtbeton', 'MH': 'Massivholz', 'MW': 'Mauerwerk'}
+buid = {'LB': truncate_colormap('Blues_r',0, 0.6), 'MH': truncate_colormap('Greens_r',0, 0.6), 'MW': truncate_colormap('Oranges_r',0, 0.7)}
 ### Kurzbezeichnung Wohnungen (Messdaten)
-WOHNUNGEN = {'N':'Nord','S':'Süd','O':'Ost'}
+WOHNUNGEN = {'N':'Nord', 'O':'Ost', 'S':'Süd'}
 ### Kurzbezeichnung Wohnungen (Simulation)
 ori = {'WE1':'Nord','WE2':'Ost','WE3':'Süd'}
 ### Überzetzung Wohnungsbezeichnungen (Simulation in Messdaten)
