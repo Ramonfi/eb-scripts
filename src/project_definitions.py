@@ -12,7 +12,7 @@ from src.utilities import truncate_colormap
 
 # Ein paar Namen und Kurzbezeichnungen
 ### Kurzbezeichnung Häuser
-BUID = {'MH': 'Massivholz','MW': 'Mauerwerk','LB': 'Leichtbeton'}
+BUID = {'LB': 'Leichtbeton','MH': 'Massivholz','MW': 'Mauerwerk'}
 buid = {'MH': truncate_colormap('Greens_r',0, 0.6), 'MW': truncate_colormap('Oranges_r',0, 0.7), 'LB': truncate_colormap('Blues_r',0, 0.6)}
 ### Kurzbezeichnung Wohnungen (Messdaten)
 WOHNUNGEN = {'N':'Nord','S':'Süd','O':'Ost'}
