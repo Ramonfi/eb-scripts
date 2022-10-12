@@ -11,7 +11,7 @@ import operator as op
 def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, title=True, annotateComf=False):
 
     """
-    Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 15251:2012 - NA.
+    Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 16789-1 (ehem. DIN EN 15251:2012 - NA).
 
     Wenn ax = None: returns fig, ax
 
@@ -129,7 +129,7 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
         ax.set_ylabel('Raumlufttemperatur [°C]')
 
     if title:
-        ax.set_title('Adaptives Komfortmodell nach DIN EN 15251:2012 - NA', fontweight = 'bold', loc='left')
+        ax.set_title('Adaptives Komfortmodell nach DIN EN 16789-1/NA:2021', fontweight = 'bold', loc='left')
     
     ax.legend(
         #loc='lower right',
