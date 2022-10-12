@@ -6,9 +6,43 @@ from src.physics import g_abs, t_for_g
 import matplotlib.pyplot as plt
 import operator as op
 
+from geopy import geocoders
+from meteostat import Stations, Hourly
+from timezonefinder import TimezoneFinder
+
+def getRollingTamb(df, a=0.8):
+    return df.resample('D').mean().ewm(alpha=a, min_periods=1, ignore_na=True).mean().reindex(df.index, method='ffill')
+
+def fill_weather_gaps(df, location, dataset):
+    '''
+    Ersetze Datenlücken durch die Daten der nächsten Wetterstation. 
+    ---
+    args:
+        df  (pd.Series):    
+            Messdaten
+        location:           
+            Messort
+        dataset:            
+            Name des Datensatz der zum Auffüllen verwerndet werden soll.  
+    '''
+    loc = geocoders.Nominatim(user_agent="EinfachBauen").geocode(location)
+    station = Stations().nearby(loc.latitude, loc.longitude).fetch(1)
+    timezone = TimezoneFinder().timezone_at(lng=loc.longitude, lat=loc.latitude)
+    start = df.resample('D').mean().index.min().tz_convert('utc').to_pydatetime().replace(tzinfo=None)
+    ende = df.resample('D').mean().index.max().tz_convert('utc').to_pydatetime().replace(tzinfo=None)
+    refdata = Hourly(station, start, ende).fetch().tz_localize('utc').tz_convert(timezone)
+    if dataset in refdata.columns:
+        #print(f'{df.isna().mean():.1%}')
+        df = df.fillna(refdata[dataset])
+        #print(f'{df.isna().mean():.1%}')
+        #print(f'Lücken im Datensatz mit dem Daten der DWD Wetterstation in {station.name[0]} aufgefüllt.')
+        return df
+    else:
+        print(f'Dataset [{dataset}] nicht gefunden. Mögliche Werte: {refdata.columns.to_list()}')
+
 ################################################ Thermischer Komfort nach DIN EN 15251:2012 - NA ################################################
 
-def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, title=True, annotateComf=False):
+def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None, legend_ms=None, fillna=False, title=True, annotateComf=False):
 
     """
     Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 16789-1 (ehem. DIN EN 15251:2012 - NA).
@@ -32,7 +66,10 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
 
     fig, ax         
     """
-    df = pd.concat([TAMB,TROOM],axis=1)
+    if fillna:
+        df = pd.concat([fill_weather_gaps(TAMB, 'Mietraching', 'temp'),TROOM],axis=1)
+    else:
+        df = pd.concat([TAMB, TROOM],axis=1)
     df.columns = ['TAMB', 'TROOM']
     df.dropna(inplace=True)
     length_data = df.shape[0]
@@ -143,7 +180,7 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None,legend_ms=None, t
 
 ################################################ Thermischer Komfort nach DIN EN 16798-1 - Anhang B2.2 ################################################
 
-def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, mode:str='air', kat:list = ['II'], ms:float=None, legend_ms:float=None, title:bool=True):
+def thermal_comfort_2(TAMB:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, fillna=False, mode:str='air', kat:list = ['II'], ms:float=None, legend_ms:float=None, title:bool=True):
     """Erstelle ein Diagramm zur Evaluation des thermischen Komoforts nach DIN EN 16798-1 - Anhang B2.2
 
     Args:
@@ -170,8 +207,13 @@ def thermal_comfort_2(TAMBG24:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, mo
         ret = True
     else:
         ret = False
+        
+    if fillna:
+        TAMB = getRollingTamb(fill_weather_gaps(TAMB, 'Mietraching', 'temp'))
+    else:
+        TAMB = getRollingTamb(TAMB)
 
-    df = pd.concat([TAMBG24,TROOM],axis=1)
+    df = pd.concat([TAMB,TROOM],axis=1)
     df.columns = ['Tamb_g24', 'TROOM']
     df.dropna(inplace=True)
 
