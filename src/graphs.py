@@ -104,76 +104,64 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None, legend_ms=5.0, f
 
     # Erstellung Punktewolke und Legende
 
-    top_cloud, = ax.plot(
-        df['TAMB'], df['TROOM'],
-        color=truncate_colormap('Reds_r',0,0.8)(0.1),
-        marker = 'o',
-        mfc='none',
-        linestyle='None',
-        ms=ms,
-        alpha=0.75,
-        label = 'T_operativ (Messung)'
-        )
+    #top_cloud, = 
+        ax.plot(
+            df['TAMB'], df['TROOM'],
+            color=truncate_colormap('Reds_r',0,0.8)(0.1),
+            marker = 'o',
+            mfc='none',
+            linestyle='None',
+            ms=ms,
+            alpha=0.75,
+            label = 'Stündlicher Messwert bei Anwesenheit'
+            )
 
-    comf_line, = ax.plot(
-        #0.07,    #0.03^=-13,
-        #-0.3,    #0.90^=28,
-        x, y, c='k',
-        ls = 'dashed', 
-        label = 'T_Komfort'
-        )
+    #comf_line, = 
+        ax.plot(
+            #0.07,    #0.03^=-13,
+            #-0.3,    #0.90^=28,
+            x, y, c='k',
+            ls = 'dashed', 
+            label = 'Komfortbereich nach DIN EN 16798-1/NA:2021-06'
+            )
     
-    ax.set_xlim(-15, 40),
-    ax.set_ylim(15, 30),
+        ax.set_xlim(-15, 40),
+        ax.set_ylim(16, 32),
 
-    ax.fill_between(
-        x, 
-        [t+2 for t in y], 
-        [t-2 for t in y],
-        color="0.8")
-        #label = 'Komfortbereich')
+        ax.fill_between(
+            x, 
+            [t+2 for t in y], 
+            [t-2 for t in y],
+            color="0.8"
+            #label = 'Komfortbereich'
+            )
 
-    comf_area = mpatches.Patch(color="0.8",label ='Komfortbereich')
-
-    first_legend = ax.legend(handles=[top_cloud],bbox_to_anchor=(0.5,-0.15),frameon=False, markerscale=legend_ms)
-    ax.add_artist(first_legend)
-    second_legend = ax.legend(handles=[comf_line],bbox_to_anchor=(0.70,-0.15),frameon=False)
-    ax.add_artist(second_legend)
-    third_legend = ax.legend(handles=[comf_area],bbox_to_anchor=(1.00,-0.15),frameon=False)
-    ax.add_artist(third_legend)
-
-    #first_legend = ax.legend(handles=[top_cloud],bbox_to_anchor=(-0.02,-0.15),frameon=False)
-    #ax.add_artist(first_legend)
-    #second_legend = ax.legend(handles=[comf_line],bbox_to_anchor=(0.06,-0.15),frameon=False)
-    #ax.add_artist(second_legend)
-    #third_legend = ax.legend(handles=[comf_area],bbox_to_anchor=(0.10,-0.15),frameon=False)
-    #ax.add_artist(third_legend)
-
-    #ax.legend( 
-        #loc='lower left',
-        #markerscale = legend_ms,
-        #columnspacing = 2.0,
-        #ncol=99,
-        #bbox_to_anchor=(-0.02,-0.15),
-        #frameon=False)
+        ax.legend( 
+            loc='upper left',
+            markerscale = legend_ms,
+            #columnspacing = 2.0,
+            ncol=1,
+            #bbox_to_anchor=(-0.02,-0.15),
+            #bbox_transform=fig.transFigure,
+            frameon=False)
     
-    text3='nach DIN EN 16798-1/NA:2021-06'
-    ax.text(
-        0.80,    #0.03^=-13,
-        -0.4,    #0.90^=28, 
-        text3.strip(),   
-        ha = 'center', 
-        va = 'bottom',
-        transform=ax.transAxes)
+    #comf_area = mpatches.Patch(color="0.8")
+        #first_legend = ax.legend(handles=[comf_area],bbox_to_anchor=(0.11,0.89),frameon=False)
+        #ax.add_artist(first_legend)
+        #first_legend = ax.legend(handles=[top_cloud],bbox_to_anchor=(0.60,0.97),frameon=False, markerscale=legend_ms)
+        #ax.add_artist(first_legend)
+        #second_legend = ax.legend(handles=[comf_line],bbox_to_anchor=(0.22,0.97),frameon=False)
+        #ax.add_artist(second_legend)
 
+  
     # Erstellung Bewertungskriterien und Platzierung
     
     if annotateComf:
-        ax.annotate(
+            ax.annotate(
             r"$\bf{" + str(int(comf)) + str('\%') + "}$" + f' der Messpunkte\nim Komfortbereich',
             xy=(df.TAMB.mean(), df.TROOM.mean()), 
             xycoords='data',
-            xytext=(0.4, 0.85), 
+            xytext=(0.85, 0.23), 
             textcoords='axes fraction',
             arrowprops=dict(arrowstyle="->"),
             bbox=eb_bbox,
@@ -181,40 +169,40 @@ def thermal_comfort_1(TAMB, TROOM, ax=None, mode='air',ms=None, legend_ms=5.0, f
             verticalalignment='top')
 
     if ÜTGS > 0:
-        text1 = r"$\bf{" + str('ÜTGS') + "}$" + f'\n{ÜTGS:.1f} Kh'
-        ax.text(
-            0.03,    #0.03^=-13,
-            1.00,    #0.90^=28, 
-            text1.strip(),   
-            ha = 'left', 
-            va = 'top',
-            transform=ax.transAxes,
-            #bbox=eb_bbox, 
-            )
+            text1 = r"$\bf{" + str('ÜTGS') + "}$" + f'\n{ÜTGS:.1f} Kh'
+            ax.text(
+                0.03,    #0.03^=-13,
+                0.65,    #0.90^=28, 
+                text1.strip(),   
+                ha = 'left', 
+                va = 'top',
+                transform=ax.transAxes,
+                #bbox=eb_bbox, 
+                )
     if UTGS > 0:
-        text2 = r"$\bf{" + str('UTGS') + "}$" + f'\n{UTGS:.1f} Kh'
-        ax.text(
-            0.97,
-            0.07, 
-            text2.strip(),  
-            ha = 'right', 
-            va = 'bottom',
-            transform=ax.transAxes,
-            #bbox=eb_bbox, 
-            )
+            text2 = r"$\bf{" + str('UTGS') + "}$" + f'\n{UTGS:.1f} Kh'
+            ax.text(
+                0.03,
+                0.21, 
+                text2.strip(),  
+                ha = 'left', 
+                va = 'top',
+                transform=ax.transAxes,
+                #bbox=eb_bbox, 
+                )
 
     # Achsenbeschriftung
 
     ax.set_xlabel('Außenlufttemperatur [°C]')
 
     if mode == 'op':
-        ax.set_ylabel('operative Temperatur [°C]')
+            ax.set_ylabel('operative Raumtemperatur [°C]')
     if mode == 'air':
-        ax.set_ylabel('Raumlufttemperatur [°C]')
-
-    #if title:
-       # ax.set_title('Adaptives Komfortmodell nach DIN EN 16798-1/NA:2021-06', fontweight = 'bold', loc='left')
-    
+            ax.set_ylabel('Raumlufttemperatur [°C]')
+    '''
+    if title:
+            ax.set_title('Adaptives Komfortmodell nach DIN EN 16798-1/NA:2021-06', fontweight = 'bold', loc='left')
+    '''
     if ret:
         return fig, ax
 
@@ -284,15 +272,15 @@ def thermal_comfort_2(TAMB:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, filln
             ax.plot(x1, y1, c='k',ls = linestyle[key])
             ax.plot(x2, y2, c='k',ls = linestyle[key])
 
-            ax.annotate(
+            '''ax.annotate(
                 f'KAT {key}',
                 xy=(min(x1), 
                 min(y1)), 
                 xycoords='data',
-                xytext=(-5, 0), 
+                xytext=(-0.5, 0.0), 
                 textcoords='offset points',
-                horizontalalignment='right', 
-                verticalalignment='center'
+                horizontalalignment='left', 
+                verticalalignment='top'
                 )
 
             ax.annotate(
@@ -300,16 +288,14 @@ def thermal_comfort_2(TAMB:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, filln
                 xy=(min(x2), 
                 min(y2)), 
                 xycoords='data',
-                xytext=(-5, 0), 
+                xytext=(-0.5, 0.0), 
                 textcoords='offset points',
-                horizontalalignment='right', 
-                verticalalignment='center'
-                )
+                horizontalalignment='left', 
+                verticalalignment='bottom'
+                )'''
 
         x = np.linspace(10,30)
         y = [(t/3)+18.8 for t in x]
-
-        ax.plot(x, y, c='k',ls = 'dashed', label = 'T_Komfort')
 
         sct = ax.plot(df['Tamb_g24'], df['TROOM'],color = truncate_colormap('Reds_r',0,0.8)(0.1),
                         marker = 'o',
@@ -323,7 +309,9 @@ def thermal_comfort_2(TAMB:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, filln
                 item.set_label('Raumlufttemperatur')
         if mode == 'op':
             for item in sct:
-                item.set_label('T_operativ (Messung)')
+                item.set_label('Stündlicher Messwert bei Anwesenheit')
+
+        ax.plot(x, y, c='k',ls = 'dashed', label = 'Komfortbereich nach DIN EN 16798-1:2021-B.2.2')
 
         results = Temperaturgradstunden(df['Tamb_g24'],df['TROOM'],Kat=kat, Ret='dict')
     
@@ -338,7 +326,7 @@ def thermal_comfort_2(TAMB:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, filln
                         text1 += f'KAT {kat}: {results[key][kat]:.1f}' + text3
                         ax.text(
                             0.03,
-                            0.90, 
+                            0.75, 
                             text1.strip(),
                             ha = 'left', 
                             va = 'top',
@@ -348,43 +336,45 @@ def thermal_comfort_2(TAMB:pd.Series, TROOM:pd.Series, ax:plt.Axes = None, filln
                     if results[key][kat] > 0:
                         text2 += f'KAT {kat}: {results[key][kat]:.1f}' + text3
                         ax.text(
-                            0.97,
-                            0.05, 
+                            0.03,
+                            0.13, 
                             text2.strip(),      
-                            ha = 'right', 
-                            va = 'bottom',
+                            ha = 'left', 
+                            va = 'top',
                             transform=ax.transAxes,
                             )
             
         ax.legend(
-            #loc='lower right',
             loc='upper left',
-            ncol=2,
+            ncol=1,
             markerscale = legend_ms,
             #bbox_to_anchor=(0.025,1,1,0.125),
             #bbox_transform=fig.transFigure,
             frameon=False)
              
+
     ax.set_xlabel('gleitender Mittelwert der Außenlufttemperatur [°C]')
     ax.set_ylim(16,32)
-    ax.set_xlim(8,30)
+    ax.set_xlim(6,30)
     if mode=='air':
         ax.set_ylabel('Raumlufttemperatur [°C]')
     if mode=='op':
-        ax.set_ylabel('operative Temperatur [°C]')
+        ax.set_ylabel('operative Raumtemperatur [°C]')
+    '''
     if title:
         ax.set_title('Adaptives Komfortmodell nach DIN EN 16798-1:2021-B.2.2',
         fontweight = 'bold',
         loc='left',
         #pad = 20
         )
+    '''
     if ret:
         return fig, ax
     
 ################################################ HX DIAGRAMM ################################################
 
 def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=None,legend_ms=5.0, xlim = (-20, 40), ylim = (0, 20)):
-    """Erstelle ein Diagramm zur Evaluation des thermich hygrischen Komoforts nach DIN 1946-6.
+    """Erstelle ein Diagramm zur Evaluation des thermisch hygrischen Komoforts nach DIN 1946-6.
 
     Args:
     ------
@@ -421,10 +411,10 @@ def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=
     t_max = 26
 
     #Ränder der Grafik
-    # min_x = -20
-    # min_y = 0
-    # max_x = 40
-    # max_y = 20
+    min_x = 0
+    min_y = 0
+    max_x = 40
+    max_y = 20
 
     # Temp
     min_x = xlim[0]
@@ -456,7 +446,7 @@ def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=
         y1=y1,
         y2=y2,
         color='0.8',
-        label = 'Behaglichkeitsbereich nach DIN 1946-6'
+        label = 'Komfortbereich nach DIN 1946-6'
         )
 
     if isinstance(t2,(pd.Series, pd.DataFrame)) and isinstance(rh2, (pd.Series, pd.DataFrame)):
@@ -476,7 +466,7 @@ def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=
                 ms=ms,
                 mfc='none',
                 color=new_colors[1],
-                label = 'Außenluftfeuchte',
+                label = 'Stündl. Messwert der Außenluftfeuchte',
                 alpha = 0.75
                 )
 
@@ -500,15 +490,15 @@ def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=
         ms=ms,
         linestyle='None',
         color=new_colors[0],
-        label = 'Raumluftfeuchte',
+        label = 'Stündl. Messwert der Raumluftfeuchte',
         alpha = 0.75
         )
 
     ax.annotate(
-        r"$\bf{" + str(int(per_comf_t1)) + str('\%') + "}$" + ' der Messpunkte\nim Behaglichkeitsbereich',
+        r"$\bf{" + str(int(per_comf_t1)) + str('\%') + "}$" + ' der Messpunkte\nim Komfortbereich',
         xy=(20, min(y2)), 
         xycoords='data',
-        xytext=(0.35, 0.6), 
+        xytext=(0.32, 0.62), 
         textcoords='axes fraction',
         arrowprops=dict(arrowstyle="->"),
         bbox=eb_bbox,
@@ -526,12 +516,12 @@ def comfort_hx_diagramm(t1, rh1, ax= None, t2=None,rh2=None, cmap='Blues_r', ms=
     ax.xaxis.set_major_formatter('{x:.0f}')
     ax.yaxis.set_major_formatter('{x:.0f}')
     ax.tick_params(labelleft=True, labelright=False, left=True, right=False)
-    
+    '''
     ax.set_title(
         'H,x - Diagramm',
         fontweight = 'bold',
         loc='left',
-    )
+    )'''
 
     ax.legend(
         loc='upper left',
